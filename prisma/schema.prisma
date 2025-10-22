@@ -21,12 +21,6 @@ enum Language {
   OTHER
 }
 
-enum AuthProvider {
-  LOCAL
-  GOOGLE
-  GITHUB
-}
-
 // --------------------- DataBase_Models ---------------------
 
 model User {
@@ -38,7 +32,7 @@ model User {
   role                          Role      @default(CUSTOMER)
   
   // OAuth Fields
-  provider                      AuthProvider?
+  provider                      String?
   providerId                    String?   // User ID from OAuth provider
   avatar                        String?   // Profile picture URL
 
@@ -83,10 +77,10 @@ model Product {
   // Basic info
   title               String
   authorName          String
-  description         String
+  description         String    @db.Text
   isbn                String?   @unique // International Standard Book Number
   categoryId          String
-  
+  slug                String    @unique
   
   // Pricing
   price               Decimal  @db.Decimal(10, 2)

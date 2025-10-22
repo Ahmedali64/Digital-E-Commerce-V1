@@ -45,6 +45,10 @@ export class AuthService {
       );
       throw new ConflictException('User already exist');
     }
+
+    // First user is an admin just for demo.
+    const userCount = await this.prisma.user.count();
+    const role = userCount === 0 ? 'ADMIN' : 'CUSTOMER';
     // 12 salt round is the recommended number for better performance and security
     const hashedPassword = await bcrypt.hash(dto.password, 12);
 
@@ -61,6 +65,7 @@ export class AuthService {
           lastName: dto.lastName,
           emailVerificationToken: verificationToken,
           emailVerificationTokenExpiry: tokenExpiry,
+          role,
         },
         select: {
           id: true,

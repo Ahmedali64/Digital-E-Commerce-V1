@@ -4,3 +4,6 @@ export * from './refresh_token.dto';
 export * from './auth-user.dto';
 export * from './tokens-response.dto';
 export * from './logout-response.dto';
+export * from './change-password.dto';
+export * from './resend-verification.dto';
+export * from './verify-email.dto';

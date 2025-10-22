@@ -1,9 +1,12 @@
 import {
+  BadRequestException,
   Body,
   Controller,
+  Get,
   HttpCode,
   HttpStatus,
   Post,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -15,6 +18,8 @@ import {
   AuthUserDto,
   TokensResponseDto,
   LogoutResponseDto,
+  VerifyEmailDto,
+  ResendVerificationDto,
 } from './dto/index';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import type { AuthenticatedRequest } from 'src/common/types/authenticated-request.type';
@@ -23,6 +28,8 @@ import {
   ApiResponse,
   ApiTags,
   ApiBearerAuth,
+  ApiQuery,
+  ApiBody,
 } from '@nestjs/swagger';
 import { ErrorResponseDto } from 'src/common/dto';
 import { Throttle } from '@nestjs/throttler';
@@ -58,6 +65,85 @@ export class AuthController {
   })
   async register(@Body() dto: RegisterDto) {
     return this.authService.register(dto);
+  }
+
+  @Get('verify-email')
+  @Throttle({ default: { limit: 5, ttl: 300 } })
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Verify user email address' })
+  @ApiQuery({
+    name: 'token',
+    required: true,
+    description: 'Email verification token',
+    type: String,
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Email verified successfully',
+    schema: {
+      example: {
+        message: 'Email verified successfully! You can now login.',
+      },
+    },
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Invalid or expired token / Email already verified',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.INTERNAL_SERVER_ERROR,
+    description: 'Internal server error',
+    type: ErrorResponseDto,
+  })
+  async verifyEmail(@Query() dto: VerifyEmailDto) {
+    if (!dto.token) {
+      throw new BadRequestException('Verification token is required');
+    }
+    return this.authService.verifyEmail(dto.token);
+  }
+
+  @Post('resend-verification')
+  @Throttle({ default: { limit: 3, ttl: 300 } })
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Resend verification email' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        email: {
+          type: 'string',
+          format: 'email',
+          example: 'user@example.com',
+        },
+      },
+      required: ['email'],
+    },
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Verification email sent successfully',
+    schema: {
+      example: {
+        message: 'Verification email sent! Please check your inbox.',
+      },
+    },
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'User not found / Email already verified',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.INTERNAL_SERVER_ERROR,
+    description: 'Internal server error',
+    type: ErrorResponseDto,
+  })
+  async resendVerification(@Body() dto: ResendVerificationDto) {
+    if (!dto.email) {
+      throw new BadRequestException('Email is required');
+    }
+    return this.authService.resendVerificationEmail(dto.email);
   }
 
   @Post('login')

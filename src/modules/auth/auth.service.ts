@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   InternalServerErrorException,
@@ -13,6 +14,8 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { Prisma, Role } from '@prisma/client';
 import { formatError, getErrorMessage } from 'src/common/utils/error.util';
+import { MailService } from '../mail/mail.service';
+import { randomBytes } from 'crypto';
 
 export type PayloadType = {
   sub: string;
@@ -27,6 +30,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    private readonly mailService: MailService,
   ) {}
   async register(dto: RegisterDto) {
     this.logger.log(`Registration attempt for email: ${dto.email}`);
@@ -43,6 +47,9 @@ export class AuthService {
     // 12 salt round is the recommended number for better performance and security
     const hashedPassword = await bcrypt.hash(dto.password, 12);
 
+    const verificationToken = this.generateVerificationToken();
+    const tokenExpiry = new Date();
+    tokenExpiry.setHours(tokenExpiry.getHours() + 24);
     try {
       // We used select here to get user data without the password
       const userWithoutPassword = await this.prisma.user.create({
@@ -51,6 +58,8 @@ export class AuthService {
           password: hashedPassword,
           firstName: dto.firstName,
           lastName: dto.lastName,
+          emailVerificationToken: verificationToken,
+          emailVerificationTokenExpiry: tokenExpiry,
         },
         select: {
           id: true,
@@ -59,6 +68,7 @@ export class AuthService {
           lastName: true,
           role: true,
           isEmailVerified: true,
+          emailVerificationTokenExpiry: true,
           createdAt: true,
           updatedAt: true,
         },
@@ -67,7 +77,30 @@ export class AuthService {
       this.logger.log(
         `User registered successfully - ID: ${userWithoutPassword.id}, Email: ${userWithoutPassword.email}`,
       );
-      return userWithoutPassword;
+
+      try {
+        await this.mailService.sendVerificationEmail(
+          userWithoutPassword.email,
+          verificationToken,
+          userWithoutPassword.firstName,
+        );
+
+        this.logger.log(
+          `Verification email sent - ID: ${userWithoutPassword.id}, Email: ${userWithoutPassword.email}`,
+        );
+      } catch (emailError) {
+        this.logger.error(
+          `Failed to send verification email to ${userWithoutPassword.email}`,
+          emailError,
+        );
+        // User is still registered, they can use resend endpoint
+      }
+
+      return {
+        message:
+          'Registration successful! Please check your email to verify your account',
+        userWithoutPassword,
+      };
     } catch (error: unknown) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
@@ -86,6 +119,98 @@ export class AuthService {
 
       throw new InternalServerErrorException('Registration failed');
     }
+  }
+
+  async verifyEmail(token: string) {
+    this.logger.log(`Email verification attempt started with token: ${token}`);
+    const user = await this.prisma.user.findUnique({
+      where: { emailVerificationToken: token },
+    });
+
+    if (!user) {
+      this.logger.warn(`User token i is not valid token: ${token}`);
+      throw new BadRequestException('Invalid or expired verification token');
+    }
+
+    if (user.isEmailVerified) {
+      this.logger.warn(`User emal already cerified Email: ${user.email}`);
+      throw new BadRequestException('Email already verified');
+    }
+
+    const now = new Date();
+    if (
+      user.emailVerificationTokenExpiry &&
+      user.emailVerificationTokenExpiry < now
+    ) {
+      this.logger.warn(
+        // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+        `Verification token expired for email: ${user.email} - Expired at: ${user.emailVerificationTokenExpiry}`,
+      );
+      throw new BadRequestException(
+        'Verification token has expired. Please request a new verification email.',
+      );
+    }
+
+    const updatedUser = await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        isEmailVerified: true,
+        emailVerifiedAt: new Date(),
+        emailVerificationToken: null,
+        emailVerificationTokenExpiry: null,
+      },
+    });
+
+    this.logger.log(
+      // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+      `Email verified successfully At: ${updatedUser.emailVerifiedAt} - Email: ${user.email} `,
+    );
+    return {
+      message: 'Email verified successfully! You can now login.',
+    };
+  }
+
+  async resendVerificationEmail(email: string) {
+    this.logger.log(`Resend verification email attempt for email: ${email}`);
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      this.logger.warn(`User with Eail: ${email} was not found`);
+      throw new BadRequestException('User not found');
+    }
+
+    if (user.isEmailVerified) {
+      this.logger.warn(`User with Eail: ${email} is already verified`);
+      throw new BadRequestException('Email already verified');
+    }
+
+    const newToken = this.generateVerificationToken();
+    const tokenExpiry = new Date();
+    tokenExpiry.setHours(tokenExpiry.getHours() + 24);
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        emailVerificationToken: newToken,
+        emailVerificationTokenExpiry: tokenExpiry,
+      },
+    });
+
+    this.logger.log(`Verification token updated successfully`);
+
+    await this.mailService.sendVerificationEmail(
+      user.email,
+      newToken,
+      user.firstName,
+    );
+    this.logger.log(
+      `Verification token sent successfully to email ${user.email}`,
+    );
+    return {
+      message: 'Verification email sent! Please check your inbox.',
+    };
   }
 
   async login(dto: LoginDto) {
@@ -216,6 +341,8 @@ export class AuthService {
     return tokens;
   }
 
+  // Helper functions
+
   private generateTokens(userId: string, email: string, role: string) {
     const payload = { sub: userId, email, role };
 
@@ -243,5 +370,9 @@ export class AuthService {
         expiresAt,
       },
     });
+  }
+
+  private generateVerificationToken(): string {
+    return randomBytes(32).toString('hex');
   }
 }

@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, Length } from 'class-validator';
+import { IsNotEmpty, IsString, Length } from 'class-validator';
 import { IsStrongPassword } from 'src/common/decorators/is-strong-password.decorator';
 
 export class ChangePasswordDto {
@@ -8,7 +8,8 @@ export class ChangePasswordDto {
     description: 'Current password',
   })
   @IsString()
-  currentPassword: string;
+  @IsNotEmpty({ message: 'Reset token is required' })
+  token: string;
 
   @ApiProperty({
     example: 'NewP@ssw0rd!',

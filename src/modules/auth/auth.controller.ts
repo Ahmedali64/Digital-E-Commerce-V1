@@ -20,6 +20,7 @@ import {
   LogoutResponseDto,
   VerifyEmailDto,
   ResendVerificationDto,
+  ChangePasswordDto,
 } from './dto/index';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import type { AuthenticatedRequest } from 'src/common/types/authenticated-request.type';
@@ -200,6 +201,51 @@ export class AuthController {
   })
   async refresh(@Body() dto: RefreshTokenDto) {
     return this.authService.refreshTokens(dto.refresh_token);
+  }
+
+  @Post('request-password-reset')
+  @Throttle({ default: { limit: 3, ttl: 300 } })
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Request password reset email' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Password reset email sent (if email exists)',
+    schema: {
+      example: {
+        message: 'If that email exists, a password reset link has been sent.',
+      },
+    },
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Invalid email format',
+    type: ErrorResponseDto,
+  })
+  async requestPasswordReset(@Body() dto: ResendVerificationDto) {
+    return this.authService.requestPasswordReset(dto.email);
+  }
+
+  @Post('reset-password')
+  @Throttle({ default: { limit: 5, ttl: 300 } })
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Reset password using token' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Password reset successfully',
+    schema: {
+      example: {
+        message:
+          'Password reset successfully! You can now login with your new password.',
+      },
+    },
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Invalid token / Token expired / Weak password',
+    type: ErrorResponseDto,
+  })
+  async resetPassword(@Body() dto: ChangePasswordDto) {
+    return this.authService.resetPassword(dto.token, dto.newPassword);
   }
 
   @Post('logout')

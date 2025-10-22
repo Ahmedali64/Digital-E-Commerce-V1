@@ -4,6 +4,7 @@ import {
   ConflictException,
   NotFoundException,
   BadRequestException,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { Category, Prisma } from '@prisma/client';
 import slugify from 'slugify';
@@ -77,7 +78,9 @@ export class CategoriesService {
         stack,
       );
 
-      throw error;
+      throw new InternalServerErrorException(
+        'Failed to create category. Please try again.',
+      );
     }
   }
 
@@ -244,7 +247,7 @@ export class CategoriesService {
       where: { id },
       include: {
         _count: {
-          select: { products: true },
+          select: { products: { where: { deletedAt: null } } },
         },
       },
     });

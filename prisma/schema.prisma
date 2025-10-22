@@ -12,34 +12,48 @@ enum Role {
   CUSTOMER
 }
 
+enum Language {
+  ENGLISH
+  ARABIC
+  FRENCH
+  SPANISH
+  GERMAN
+  OTHER
+}
+
+enum AuthProvider {
+  LOCAL
+  GOOGLE
+  GITHUB
+}
+
 // --------------------- DataBase_Models ---------------------
 
 model User {
-  id                      String    @id @default(uuid())
-  email                   String    @unique
-  password                String?
-  firstName               String
-  lastName                String
-  role                    Role      @default(CUSTOMER)
+  id                            String    @id @default(uuid())
+  email                         String    @unique
+  password                      String?
+  firstName                     String
+  lastName                      String
+  role                          Role      @default(CUSTOMER)
   
   // OAuth Fields
-  provider                String?   // 'google' | 'github' | 'local'
-  providerId              String?   // User ID from OAuth provider
-  avatar                  String?   // Profile picture URL
+  provider                      AuthProvider?
+  providerId                    String?   // User ID from OAuth provider
+  avatar                        String?   // Profile picture URL
 
   // EmailVerification
-  isEmailVerified         Boolean   @default(false)
-  emailVerifiedAt         DateTime?
-  emailVerificationToken  String?   @unique
-  emailVerificationTokenExpiry DateTime?
+  isEmailVerified               Boolean   @default(false)
+  emailVerifiedAt               DateTime?
+  emailVerificationToken        String?   @unique
+  emailVerificationTokenExpiry  DateTime?
 
   // Password Reset
-  passwordResetToken      String?   @unique
-  passwordResetExpires    DateTime?
+  passwordResetToken            String?   @unique
+  passwordResetExpires          DateTime?
 
-  createdAt               DateTime  @default(now())
-  updatedAt               DateTime  @updatedAt
-
+  createdAt                     DateTime  @default(now())
+  updatedAt                     DateTime  @updatedAt
 
   // Relations
   refreshTokens           RefreshToken[]
@@ -61,4 +75,65 @@ model RefreshToken {
   
   @@index([userId])
   @@map("refresh_tokens")
+}
+
+model Product {
+  id                  String    @id @default(uuid())
+
+  // Basic info
+  title               String
+  authorName          String
+  description         String
+  isbn                String?   @unique // International Standard Book Number
+  categoryId          String
+  
+  
+  // Pricing
+  price               Decimal  @db.Decimal(10, 2)
+  discountPercentage  Int?
+  saleEndsAt          DateTime?
+  
+  // Files
+  coverImage          String
+  pdfFile             String
+  
+  // Metadata
+  pageCount           Int?
+  language            Language  @default(ENGLISH)
+  isPublished         Boolean
+  publishedAt         DateTime?
+  deletedAt           DateTime?
+  publishedYear       Int?
+  
+  // Timestamps
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  // Relations
+  category   Category  @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  
+  // Indexes for performance
+  @@index([title])              // Search by title
+  @@index([authorName])         // Search by authorName
+  @@index([categoryId])         // Filter by category
+  @@index([isPublished])        // Filter published books
+  @@index([price])              // Sort by price
+
+  @@map("products")
+}
+
+model Category {
+  id            String   @id @default(uuid())
+  name          String    @unique
+  slug          String    @unique
+  description   String?   @db.Text
+  image         String?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Relations
+  products      Product[]
+
+  @@map("categories")
 }

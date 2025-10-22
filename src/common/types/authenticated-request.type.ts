@@ -1,0 +1,13 @@
+import { Role } from '@prisma/client';
+import { Request } from 'express';
+
+export interface AuthenticatedRequest extends Request {
+  user: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    role: Role;
+    isEmailVerified: boolean;
+  };
+}

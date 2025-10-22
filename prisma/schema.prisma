@@ -1,0 +1,64 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  CUSTOMER
+}
+
+// --------------------- DataBase_Models ---------------------
+
+model User {
+  id                      String    @id @default(uuid())
+  email                   String    @unique
+  password                String?
+  firstName               String
+  lastName                String
+  role                    Role      @default(CUSTOMER)
+  
+  // OAuth Fields
+  provider                String?   // 'google' | 'github' | 'local'
+  providerId              String?   // User ID from OAuth provider
+  avatar                  String?   // Profile picture URL
+
+  // EmailVerification
+  isEmailVerified         Boolean   @default(false)
+  emailVerifiedAt         DateTime?
+  emailVerificationToken  String?   @unique
+  emailVerificationTokenExpiry DateTime?
+
+  // Password Reset
+  passwordResetToken      String?   @unique
+  passwordResetExpires    DateTime?
+
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+
+
+  // Relations
+  refreshTokens           RefreshToken[]
+
+  // The combination 'google-12345' is unique,
+  // but 'github-12345' is still allowed.
+  @@unique([provider, providerId])
+}
+
+model RefreshToken {
+  id          String   @id @default(uuid())
+  token       String   @db.Text
+  userId      String
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+  
+  // Relations
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@map("refresh_tokens")
+}

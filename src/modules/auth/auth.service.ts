@@ -16,6 +16,7 @@ import { Prisma, Role } from '@prisma/client';
 import { formatError, getErrorMessage } from 'src/common/utils/error.util';
 import { MailService } from '../mail/mail.service';
 import { randomBytes } from 'crypto';
+import { OAuthProfile } from 'src/common/types/oauth-profile.type';
 
 export type PayloadType = {
   sub: string;
@@ -322,7 +323,7 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const isPasswordValid = await bcrypt.compare(dto.password, user.password);
+    const isPasswordValid = await bcrypt.compare(dto.password, user.password!);
 
     if (!isPasswordValid) {
       this.logger.warn(`Login failed - Invalid password for: ${dto.email}`);
@@ -437,8 +438,102 @@ export class AuthService {
     return tokens;
   }
 
-  // Helper functions
+  // Handle OAuth login (Google/GitHub)
+  async handleOAuthLogin(profile: OAuthProfile) {
+    this.logger.log(
+      `OAuth login attempt - Provider: ${profile.provider}, Email: ${profile.email}`,
+    );
+    try {
+      let user = await this.prisma.user.findUnique({
+        where: {
+          // These 2 rogether are unique as one ex (google-12345)
+          provider_providerId: {
+            provider: profile.provider,
+            providerId: profile.providerId,
+          },
+        },
+      });
 
+      if (user) {
+        this.logger.log(
+          `Existing OAuth user logged in - ID: ${user.id}, Provider: ${profile.provider}`,
+        );
+      } else {
+        const existingEmailUser = await this.prisma.user.findUnique({
+          where: { email: profile.email },
+        });
+        if (existingEmailUser) {
+          // Email exists but with different provider (local/google/github)
+          this.logger.warn(
+            `Email ${profile.email} already registered with provider: ${existingEmailUser.provider}`,
+          );
+          throw new ConflictException(
+            `This email is already registered with ${existingEmailUser.provider || 'email/password'}. Please use that method to login.`,
+          );
+        }
+
+        // login but without a password
+        user = await this.prisma.user.create({
+          data: {
+            email: profile.email,
+            firstName: profile.firstName,
+            lastName: profile.lastName,
+            provider: profile.provider,
+            providerId: profile.providerId,
+            avatar: profile.avatar,
+            isEmailVerified: true,
+            emailVerifiedAt: new Date(),
+            password: null,
+          },
+        });
+
+        this.logger.log(
+          `New OAuth user created - ID: ${user.id}, Provider: ${profile.provider}, Email: ${profile.email}`,
+        );
+      }
+
+      const tokens = this.generateTokens(user.id, user.email, user.role);
+
+      return {
+        message: 'Login successful',
+        user: {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          avatar: user.avatar,
+          provider: user.provider,
+          role: user.role,
+          isEmailVerified: user.isEmailVerified,
+        },
+        accessToken: tokens.access_token,
+        refreshToken: tokens.refresh_token,
+      };
+    } catch (error: unknown) {
+      if (error instanceof ConflictException) {
+        throw error;
+      }
+
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2002') {
+          this.logger.warn(
+            `OAuth login failed - Unique constraint violation: ${profile.email}`,
+          );
+          throw new ConflictException('User already exists');
+        }
+      }
+
+      const { message, stack } = formatError(error);
+      this.logger.error(
+        `OAuth login failed for ${profile.email}: ${message}`,
+        stack,
+      );
+
+      throw new InternalServerErrorException('OAuth login failed');
+    }
+  }
+
+  // Helper functions
   private generateTokens(userId: string, email: string, role: string) {
     const payload = { sub: userId, email, role };
 

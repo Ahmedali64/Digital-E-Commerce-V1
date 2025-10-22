@@ -17,10 +17,15 @@ enum Role {
 model User {
   id                      String    @id @default(uuid())
   email                   String    @unique
-  password                String
+  password                String?
   firstName               String
   lastName                String
   role                    Role      @default(CUSTOMER)
+  
+  // OAuth Fields
+  provider                String?   // 'google' | 'github' | 'local'
+  providerId              String?   // User ID from OAuth provider
+  avatar                  String?   // Profile picture URL
 
   // EmailVerification
   isEmailVerified         Boolean   @default(false)
@@ -38,6 +43,10 @@ model User {
 
   // Relations
   refreshTokens           RefreshToken[]
+
+  // The combination 'google-12345' is unique,
+  // but 'github-12345' is still allowed.
+  @@unique([provider, providerId])
 }
 
 model RefreshToken {

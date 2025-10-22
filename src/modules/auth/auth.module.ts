@@ -5,12 +5,15 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PassportModule } from '@nestjs/passport';
 import { MailModule } from '../mail/mail.module';
+import { GoogleStrategy } from './strategies/google.strategy';
+import { GithubStrategy } from './strategies/github.strategy';
+import { JwtStrategy } from './strategies/jwt.strategy';
 
 @Module({
-  providers: [AuthService],
+  providers: [AuthService, JwtStrategy, GoogleStrategy, GithubStrategy],
   controllers: [AuthController],
   imports: [
-    PassportModule,
+    PassportModule.register({ defaultStrategy: 'jwt' }),
     MailModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],

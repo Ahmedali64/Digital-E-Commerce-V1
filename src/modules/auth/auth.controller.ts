@@ -5,9 +5,11 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Logger,
   Post,
   Query,
   Req,
+  Res,
   UseGuards,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
@@ -23,7 +25,10 @@ import {
   ChangePasswordDto,
 } from './dto/index';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
-import type { AuthenticatedRequest } from 'src/common/types/authenticated-request.type';
+import type {
+  AuthenticatedOAuthRequest,
+  AuthenticatedRequest,
+} from 'src/common/types/authenticated-request.type';
 import {
   ApiOperation,
   ApiResponse,
@@ -34,11 +39,21 @@ import {
 } from '@nestjs/swagger';
 import { ErrorResponseDto } from 'src/common/dto';
 import { Throttle } from '@nestjs/throttler';
+import { ConfigService } from '@nestjs/config';
+import { GithubAuthGuard } from 'src/common/guards/github-auth.guard';
+import { getErrorMessage } from 'src/common/utils/error.util';
+import { GoogleAuthGuard } from 'src/common/guards/google-auth.guard';
+import type { Response } from 'express';
 
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  private readonly logger = new Logger(AuthController.name);
+
+  constructor(
+    private readonly authService: AuthService,
+    private readonly configService: ConfigService,
+  ) {}
 
   @Post('register')
   @Throttle({ default: { limit: 3, ttl: 300 } })
@@ -297,5 +312,95 @@ export class AuthController {
   })
   async logoutAll(@Req() req: AuthenticatedRequest) {
     return this.authService.logoutAll(req.user.id);
+  }
+
+  @Get('google')
+  @UseGuards(GoogleAuthGuard)
+  @ApiOperation({ summary: 'Initiate Google OAuth login' })
+  @ApiResponse({
+    status: HttpStatus.FOUND,
+    description: 'Redirects to Google login page',
+  })
+  async googleLogin() {
+    // This method just triggers the guard
+    // User will be redirected to Google
+  }
+
+  @Get('google/callback')
+  @UseGuards(GoogleAuthGuard)
+  @ApiOperation({ summary: 'Google OAuth callback' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Successfully authenticated with Google',
+  })
+  @ApiResponse({
+    status: HttpStatus.CONFLICT,
+    description: 'Email already registered with different provider',
+  })
+  async googleCallback(
+    @Req() req: AuthenticatedOAuthRequest,
+    @Res() res: Response,
+  ) {
+    // req.user contains the profile from GoogleStrategy.validate()
+    this.logger.log('Google OAuth callback received');
+
+    try {
+      const result = await this.authService.handleOAuthLogin(req.user);
+      const frontendUrl = this.configService.get<string>('FRONTEND_URL');
+      const redirectUrl = `${frontendUrl}/auth/callback?token=${result.accessToken}`;
+      return res.redirect(redirectUrl);
+    } catch (error) {
+      const frontendUrl = this.configService.get<string>('FRONTEND_URL');
+      const message = getErrorMessage(error);
+      const errorMessage = message || 'OAuth login failed';
+      const redirectUrl = `${frontendUrl}/auth/callback?error=${encodeURIComponent(errorMessage)}`;
+
+      return res.redirect(redirectUrl);
+    }
+  }
+
+  @Get('github')
+  @UseGuards(GithubAuthGuard)
+  @ApiOperation({ summary: 'Initiate GitHub OAuth login' })
+  @ApiResponse({
+    status: HttpStatus.FOUND,
+    description: 'Redirects to GitHub login page',
+  })
+  async githubLogin() {
+    // Triggers GitHub OAuth flow
+  }
+
+  @Get('github/callback')
+  @UseGuards(GithubAuthGuard)
+  @ApiOperation({ summary: 'GitHub OAuth callback' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Successfully authenticated with GitHub',
+  })
+  @ApiResponse({
+    status: HttpStatus.CONFLICT,
+    description: 'Email already registered with different provider',
+  })
+  async githubCallback(
+    @Req() req: AuthenticatedOAuthRequest,
+    @Res() res: Response,
+  ) {
+    this.logger.log('GitHub OAuth callback received');
+
+    try {
+      const result = await this.authService.handleOAuthLogin(req.user);
+
+      const frontendUrl = this.configService.get<string>('FRONTEND_URL');
+      const redirectUrl = `${frontendUrl}/auth/callback?token=${result.accessToken}`;
+
+      return res.redirect(redirectUrl);
+    } catch (error) {
+      const frontendUrl = this.configService.get<string>('FRONTEND_URL');
+      const message = getErrorMessage(error);
+      const errorMessage = message || 'OAuth login failed';
+      const redirectUrl = `${frontendUrl}/auth/callback?error=${encodeURIComponent(errorMessage)}`;
+
+      return res.redirect(redirectUrl);
+    }
   }
 }

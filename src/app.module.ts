@@ -7,6 +7,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { LoggerModule } from './common/logger/logger.module';
 import { MailModule } from './modules/mail/mail.module';
+import { UsersModule } from './modules/users/users.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { MailModule } from './modules/mail/mail.module';
     AuthModule,
     LoggerModule,
     MailModule,
+    UsersModule,
   ],
   controllers: [AppController],
   providers: [AppService],

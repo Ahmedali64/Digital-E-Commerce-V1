@@ -50,11 +50,11 @@ export class CreateProductDto {
     example:
       '"Clean Code" by Robert C. Martin emphasizes the importance of writing readable and maintainable code.',
     description: 'Product description',
-    minLength: 200,
+    minLength: 20,
     maxLength: 1000,
   })
   @IsString()
-  @Length(200, 1000, {
+  @Length(20, 1000, {
     message: 'Description must be between 200 and 1000 characters',
   })
   @Transform(({ value }) => (typeof value === 'string' ? value.trim() : ''))

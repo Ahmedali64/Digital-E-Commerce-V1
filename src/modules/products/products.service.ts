@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  InternalServerErrorException,
   Logger,
   NotFoundException,
 } from '@nestjs/common';
@@ -144,7 +145,9 @@ export class ProductsService {
         `Product creation failed: ${dto.title}: ${message}`,
         stack,
       );
-      throw error;
+      throw new InternalServerErrorException(
+        'Failed to create product. Please try again.',
+      );
     }
   }
 
@@ -159,7 +162,6 @@ export class ProductsService {
       onSale,
       sortBy,
       page = 1,
-      limit = 12,
     } = query;
 
     // A where clause that we will use to retrieve products with searching and filtering options
@@ -222,6 +224,8 @@ export class ProductsService {
         orderBy = { createdAt: 'desc' };
     }
 
+    const MAX_LIMIT = 100;
+    const limit = Math.min(query.limit || 12, MAX_LIMIT);
     const skip = (page - 1) * limit;
 
     try {
@@ -263,7 +267,9 @@ export class ProductsService {
         `Getting all products failed. Message: ${message}`,
         stack,
       );
-      throw error;
+      throw new InternalServerErrorException(
+        'Failed to fetch all products. Please try again.',
+      );
     }
   }
 
@@ -274,6 +280,7 @@ export class ProductsService {
       where: {
         OR: [{ id: identifier }, { slug: identifier }],
         deletedAt: null,
+        isPublished: true,
       },
       include: {
         category: {
@@ -281,7 +288,6 @@ export class ProductsService {
             id: true,
             name: true,
             slug: true,
-            description: true,
           },
         },
       },
@@ -292,26 +298,29 @@ export class ProductsService {
       throw new NotFoundException('Product not found');
     }
 
-    if (product.saleEndsAt && product.saleEndsAt < new Date()) {
-      await this.prisma.product.update({
-        where: { id: product.id },
-        data: {
-          discountPercentage: null,
-          saleEndsAt: null,
-        },
-      });
-      product.discountPercentage = null;
-      product.saleEndsAt = null;
-    }
+    // Why did we remove the update from here
+    /**
+     * Reading a product shouldn't change the database
+     * if 1000 users view the product at the same time, you'll do 1000 unnecessary updates
+     * So we will just add a condition
+     */
+    const isSaleActive =
+      product.saleEndsAt &&
+      product.saleEndsAt > new Date() &&
+      product.discountPercentage;
 
     const price = Number(product.price);
-    const finalPrice = this.calculateFinalPrice(
-      price,
-      product.discountPercentage!,
-    );
+    const finalPrice = product.discountPercentage
+      ? this.calculateFinalPrice(price, product.discountPercentage)
+      : price;
 
     return {
-      product,
+      product: {
+        ...product,
+        // Show null if sale expired
+        discountPercentage: isSaleActive ? product.discountPercentage : null,
+        saleEndsAt: isSaleActive ? product.saleEndsAt : null,
+      },
       priceAfterDiscount: finalPrice,
     };
   }
@@ -407,10 +416,9 @@ export class ProductsService {
       this.logger.log(`Product updated: ID=${id}`);
 
       const price = Number(product.price);
-      const finalPrice = this.calculateFinalPrice(
-        price,
-        product.discountPercentage!,
-      );
+      const finalPrice = product.discountPercentage
+        ? this.calculateFinalPrice(price, product.discountPercentage)
+        : price;
 
       return {
         message: 'Product updated successfully',
@@ -428,7 +436,9 @@ export class ProductsService {
       }
 
       this.logger.error(`Product update failed: ${id}`, error);
-      throw error;
+      throw new InternalServerErrorException(
+        'Failed to update product. Please try again.',
+      );
     }
   }
 

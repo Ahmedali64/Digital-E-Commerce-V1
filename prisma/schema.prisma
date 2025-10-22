@@ -107,11 +107,16 @@ model Product {
   category   Category  @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   
   // Indexes for performance
-  @@index([title])              // Search by title
-  @@index([authorName])         // Search by authorName
-  @@index([categoryId])         // Filter by category
-  @@index([isPublished])        // Filter published books
-  @@index([price])              // Sort by price
+  @@index([title])                    // Search by title
+  @@index([authorName])               // Search by authorName
+  @@index([price])                    // Sort by price
+  @@index([saleEndsAt])               // For sale queries
+
+  @@index([isPublished, deletedAt])   // For main query
+  @@index([deletedAt])                // For soft delete checks
+
+  @@index([categoryId, isPublished])  // Filter by category + published
+  @@index([isPublished])              // Filter published books
 
   @@map("products")
 }

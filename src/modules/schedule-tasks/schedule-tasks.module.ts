@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
-import { ScheduleTasksService } from './schedule-tasks.service';
+import { ScheduledTasksService } from './schedule-tasks.service';
 import { FilesModule } from '../files/files.module';
 
 @Module({
-  providers: [ScheduleTasksService],
+  providers: [ScheduledTasksService],
   imports: [FilesModule],
 })
 export class ScheduleTasksModule {}

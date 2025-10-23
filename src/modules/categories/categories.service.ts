@@ -26,7 +26,6 @@ export class CategoriesService {
   ) {}
   async create(dto: CreateCategoryDto, file: { image: Express.Multer.File[] }) {
     this.logger.log(`Category creation attempt: ${dto.name}`);
-
     if (!file?.image) {
       throw new BadRequestException('Cover image is required');
     }

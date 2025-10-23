@@ -18,16 +18,32 @@ import {
   SortBy,
   UpdateProductDto,
 } from './dto';
+import { FilesService, UploadResult } from '../files/files.service';
 
 @Injectable()
 export class ProductsService {
   private readonly logger = new Logger(ProductsService.name);
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly fileUploadService: FilesService,
+  ) {}
 
   async createProduct(
     dto: CreateProductDto,
+    files: {
+      coverImage?: Express.Multer.File[];
+      pdfFile?: Express.Multer.File[];
+    },
   ): Promise<CreateProductResponseDto> {
     this.logger.log(`Creation attempt for product with title: ${dto.title}`);
+
+    if (!files?.coverImage) {
+      throw new BadRequestException('Cover image is required');
+    }
+    if (!files?.pdfFile) {
+      throw new BadRequestException('PDF file is required');
+    }
+
     const categoryExists = await this.prisma.category.findUnique({
       where: { id: dto.categoryId },
     });
@@ -76,6 +92,34 @@ export class ProductsService {
       );
     }
 
+    let coverResult: UploadResult | undefined;
+    let pdfResult: UploadResult | undefined;
+
+    try {
+      coverResult = await this.fileUploadService.uploadProductCover(
+        files.coverImage[0],
+      );
+
+      pdfResult = await this.fileUploadService.uploadProductPDF(
+        files.pdfFile[0],
+      );
+
+      this.logger.log(
+        `Files uploaded: Cover=${coverResult.path}, PDF=${pdfResult.path}`,
+      );
+    } catch (error) {
+      // We are removing the path not the pdf file path cause if there is an err on the cover it will not make a path and there is no saved file but if there is an err in the pdf upload the cover would be already saved and done so we remove it
+      if (coverResult?.path) {
+        await this.fileUploadService.deleteFile(coverResult.path);
+      }
+      const { message, stack } = formatError(error);
+      this.logger.error(
+        `Error while uploading product files : ${message}`,
+        stack,
+      );
+      throw new InternalServerErrorException('File upload failed');
+    }
+
     // If admin sets product to published we set the publish date to now
     let publishedAt: Date | null = null;
     if (dto.isPublished) {
@@ -91,6 +135,12 @@ export class ProductsService {
           ...dto,
           slug,
           publishedAt,
+          coverImage: coverResult.path,
+          coverImageSize: coverResult.size,
+          coverImageOriginal: files.coverImage[0].originalname,
+          pdfFile: pdfResult.path,
+          pdfFileSize: pdfResult.size,
+          pdfFileOriginal: files.pdfFile[0].originalname,
         },
         include: {
           category: {
@@ -325,7 +375,14 @@ export class ProductsService {
     };
   }
 
-  async update(id: string, dto: UpdateProductDto) {
+  async update(
+    id: string,
+    dto: UpdateProductDto,
+    files?: {
+      coverImage?: Express.Multer.File[];
+      pdfFile?: Express.Multer.File[];
+    },
+  ) {
     this.logger.log(`Update attempt for product: ${id}`);
     const existing = await this.prisma.product.findUnique({
       where: { id, deletedAt: null },
@@ -333,6 +390,26 @@ export class ProductsService {
 
     if (!existing) {
       throw new NotFoundException('Product not found');
+    }
+
+    let coverResult: UploadResult | undefined;
+    let pdfResult: UploadResult | undefined;
+    try {
+      if (files?.coverImage?.[0]) {
+        coverResult = await this.fileUploadService.uploadProductCover(
+          files.coverImage[0],
+        );
+      }
+
+      if (files?.pdfFile?.[0]) {
+        pdfResult = await this.fileUploadService.uploadProductPDF(
+          files.pdfFile[0],
+        );
+      }
+    } catch (error) {
+      const { message, stack } = formatError(error);
+      this.logger.error(`File upload failed during update: ${message}`, stack);
+      throw new InternalServerErrorException('Error while updating the files');
     }
 
     // If updating title, regenerate slug
@@ -401,6 +478,17 @@ export class ProductsService {
           // If slug has a truthy value the expression slug && { slug } becomes { slug: 'clean-code' } then we spread it with ...
           ...(slug && { slug }),
           publishedAt,
+          // update if there is a value for the update results
+          ...(coverResult && {
+            coverImage: coverResult.path,
+            coverImageSize: coverResult.size,
+            coverImageOriginal: files?.coverImage?.[0]?.originalname,
+          }),
+          ...(pdfResult && {
+            pdfFile: pdfResult.path,
+            pdfFileSize: pdfResult.size,
+            pdfFileOriginal: files?.pdfFile?.[0]?.originalname,
+          }),
         },
         include: {
           category: {
@@ -412,6 +500,13 @@ export class ProductsService {
           },
         },
       });
+
+      if (coverResult && existing.coverImage) {
+        await this.fileUploadService.deleteFile(existing.coverImage);
+      }
+      if (pdfResult && existing.pdfFile) {
+        await this.fileUploadService.deleteFile(existing.pdfFile);
+      }
 
       this.logger.log(`Product updated: ID=${id}`);
 

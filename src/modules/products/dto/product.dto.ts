@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Decimal } from '@prisma/client/runtime/binary';
 
 export class ProductDto {
@@ -47,10 +47,30 @@ export class ProductDto {
   })
   coverImage: string;
 
+  @ApiPropertyOptional({
+    example: 5242880,
+  })
+  coverImageSize: number | null;
+
+  @ApiPropertyOptional({
+    example: 'clean-code-cover.jpg',
+  })
+  coverImageOriginal: string | null;
+
   @ApiProperty({
     example: 'https://cdn.example.com/uploads/books/clean-code.pdf',
   })
   pdfFile: string;
+
+  @ApiPropertyOptional({
+    example: 52428800,
+  })
+  pdfFileSize: number | null;
+
+  @ApiPropertyOptional({
+    example: 'clean-code.pdf',
+  })
+  pdfFileOriginal: string | null;
 
   @ApiProperty({ example: 464, required: false })
   pageCount: number | null;

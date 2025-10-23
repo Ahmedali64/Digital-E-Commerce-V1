@@ -25,12 +25,4 @@ export class CreateCategoryDto {
   })
   @Transform(({ value }) => (typeof value === 'string' ? value.trim() : ''))
   description?: string;
-
-  @ApiPropertyOptional({
-    example: '/uploads/categories/programming.jpg',
-    description: 'Category image URL',
-  })
-  @IsOptional()
-  @IsString()
-  image?: string;
 }

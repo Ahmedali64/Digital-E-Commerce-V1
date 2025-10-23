@@ -29,6 +29,9 @@ async function bootstrap() {
       whitelist: true, // Strip props that don't have decorators
       forbidNonWhitelisted: true, // Throw error if extra props sent
       transform: true, // Auto-transform payloads from object to DTO instances
+      transformOptions: {
+        enableImplicitConversion: true, // Allows automatic type conversion based on property type
+      },
     }),
   );
 
@@ -39,7 +42,13 @@ async function bootstrap() {
       origin: configService.get<string>('CORS_ORIGIN'),
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-      allowedHeaders: ['Content-Type', 'Authorization'],
+      allowedHeaders: [
+        'Content-Type',
+        'Authorization',
+        'Accept',
+        'Origin',
+        'X-Requested-With',
+      ],
     });
   } else {
     app.enableCors({

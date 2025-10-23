@@ -14,6 +14,10 @@ class ProductSummaryDto {
   @ApiProperty()
   coverImage: string;
   @ApiProperty()
+  imageSize: number;
+  @ApiProperty()
+  imageOriginal: string;
+  @ApiProperty()
   isPublished: boolean;
 }
 export class CategoryWithProductsDto extends CategoryDto {

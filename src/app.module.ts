@@ -11,6 +11,8 @@ import { UsersModule } from './modules/users/users.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { ProductsModule } from './modules/products/products.module';
 import { FilesModule } from './modules/files/files.module';
+import { ScheduleModule } from '@nestjs/schedule';
+import { ScheduleTasksModule } from './modules/schedule-tasks/schedule-tasks.module';
 
 @Module({
   imports: [
@@ -21,6 +23,7 @@ import { FilesModule } from './modules/files/files.module';
         limit: 10, // max requests per window per "tracker" (usually IP)
       },
     ]),
+    ScheduleModule.forRoot(),
     PrismaModule,
     AuthModule,
     LoggerModule,
@@ -29,6 +32,7 @@ import { FilesModule } from './modules/files/files.module';
     CategoriesModule,
     ProductsModule,
     FilesModule,
+    ScheduleTasksModule,
   ],
   controllers: [AppController],
   providers: [AppService],

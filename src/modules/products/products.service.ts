@@ -548,6 +548,7 @@ export class ProductsService {
     }
 
     // Soft delete
+    // i will keep the files here for recovery or i will add a corn after x days will delete the file
     await this.prisma.product.update({
       where: { id },
       data: { deletedAt: new Date() },

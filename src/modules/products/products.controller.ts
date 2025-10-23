@@ -9,7 +9,9 @@ import {
   Patch,
   Post,
   Query,
+  UploadedFiles,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import { Throttle } from '@nestjs/throttler';
@@ -32,6 +34,8 @@ import {
   QueryProductsDto,
   UpdateProductDto,
 } from './dto';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
+import { MulterConfig } from 'src/config/multer.config';
 
 @Controller('products')
 @ApiTags('Products')
@@ -44,6 +48,15 @@ export class ProductsController {
   @Roles('ADMIN')
   @Throttle({ default: { limit: 3, ttl: 300 } })
   @HttpCode(HttpStatus.CREATED)
+  @UseInterceptors(
+    FileFieldsInterceptor(
+      [
+        { name: 'coverImage', maxCount: 1 },
+        { name: 'pdfFile', maxCount: 1 },
+      ],
+      MulterConfig,
+    ),
+  )
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a new product' })
   @ApiResponse({
@@ -67,12 +80,7 @@ export class ProductsController {
   })
   @ApiResponse({
     status: HttpStatus.CONFLICT,
-    description: 'Slug already exists',
-    type: ErrorResponseDto,
-  })
-  @ApiResponse({
-    status: HttpStatus.CONFLICT,
-    description: 'Isbn already exists',
+    description: 'Slug or isbn already exists',
     type: ErrorResponseDto,
   })
   @ApiResponse({
@@ -80,13 +88,29 @@ export class ProductsController {
     description: 'Internal server error',
     type: ErrorResponseDto,
   })
-  async createProduct(@Body() dto: CreateProductDto) {
-    return await this.productsService.createProduct(dto);
+  async createProduct(
+    @Body() dto: CreateProductDto,
+    @UploadedFiles()
+    files: {
+      coverImage: Express.Multer.File[];
+      pdfFile: Express.Multer.File[];
+    },
+  ) {
+    return await this.productsService.createProduct(dto, files);
   }
 
   @Patch(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
+  @UseInterceptors(
+    FileFieldsInterceptor(
+      [
+        { name: 'coverImage', maxCount: 1 },
+        { name: 'pdfFile', maxCount: 1 },
+      ],
+      MulterConfig,
+    ),
+  )
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update product (Admin only)' })
   @ApiParam({ name: 'id', description: 'Product ID' })
@@ -103,8 +127,13 @@ export class ProductsController {
   async updateProduct(
     @Param('id') id: string,
     @Body() updateProductDto: UpdateProductDto,
+    @UploadedFiles()
+    files?: {
+      coverImage?: Express.Multer.File[];
+      pdfFile?: Express.Multer.File[];
+    },
   ) {
-    return this.productsService.update(id, updateProductDto);
+    return this.productsService.update(id, updateProductDto, files);
   }
 
   @Delete(':id')

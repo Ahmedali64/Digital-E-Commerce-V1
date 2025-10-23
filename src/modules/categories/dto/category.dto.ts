@@ -18,8 +18,20 @@ export class CategoryDto {
     example: '/uploads/categories/programming.jpg',
   })
   image: string | null;
+
+  @ApiPropertyOptional({
+    example: 5242880,
+  })
+  imageSize: number | null;
+
+  @ApiPropertyOptional({
+    example: 'programming.jpg',
+  })
+  imageOriginal: string | null;
+
   @ApiProperty({ example: '2025-10-15T10:00:00.000Z' })
   createdAt: Date;
+
   @ApiProperty({ example: '2025-10-15T10:00:00.000Z' })
   updatedAt: Date;
 }

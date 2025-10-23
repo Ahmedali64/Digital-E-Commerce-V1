@@ -89,7 +89,12 @@ model Product {
   
   // Files
   coverImage          String
+  coverImageSize      Int?      // in bytes
+  coverImageOriginal  String?
+  
   pdfFile             String
+  pdfFileSize         Int?      // in bytes
+  pdfFileOriginal     String?
   
   // Metadata
   pageCount           Int?
@@ -127,7 +132,8 @@ model Category {
   slug          String    @unique
   description   String?   @db.Text
   image         String?
-
+  imageSize     Int?      // in bytes
+  imageOriginal String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   

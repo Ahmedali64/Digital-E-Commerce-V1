@@ -11,6 +11,7 @@ import slugify from 'slugify';
 import { formatError } from 'src/common/utils/error.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCategoryDto, UpdateCategoryDto } from './dto';
+import { FilesService, UploadResult } from '../files/files.service';
 
 interface CategoryWithProductCount extends Category {
   _count: { products: number };
@@ -19,10 +20,16 @@ interface CategoryWithProductCount extends Category {
 @Injectable()
 export class CategoriesService {
   private readonly logger = new Logger(CategoriesService.name);
-  constructor(private prisma: PrismaService) {}
-
-  async create(dto: CreateCategoryDto) {
+  constructor(
+    private prisma: PrismaService,
+    private readonly fileUploadService: FilesService,
+  ) {}
+  async create(dto: CreateCategoryDto, file: { image: Express.Multer.File[] }) {
     this.logger.log(`Category creation attempt: ${dto.name}`);
+
+    if (!file?.image) {
+      throw new BadRequestException('Cover image is required');
+    }
 
     // Auto-generate slug from name
     const slug = slugify(dto.name, {
@@ -42,11 +49,32 @@ export class CategoriesService {
       );
     }
 
+    let coverImagePath: string;
+    let coverResult: UploadResult | undefined;
+    try {
+      coverResult = await this.fileUploadService.uploadCategoryImage(
+        file.image[0],
+      );
+      coverImagePath = coverResult.path;
+
+      this.logger.log(`File uploaded: Cover=${coverImagePath}`);
+    } catch (error: unknown) {
+      const { message, stack } = formatError(error);
+      this.logger.error(
+        `Error while uploading category image for "${dto.name}": ${message}`,
+        stack,
+      );
+      throw new InternalServerErrorException('File upload failed');
+    }
+
     try {
       const category = await this.prisma.category.create({
         data: {
           ...dto,
           slug,
+          image: coverResult.path,
+          imageSize: coverResult.size,
+          imageOriginal: file.image[0].originalname,
         },
       });
 
@@ -180,7 +208,11 @@ export class CategoriesService {
     };
   }
 
-  async update(id: string, dto: UpdateCategoryDto) {
+  async update(
+    id: string,
+    dto: UpdateCategoryDto,
+    file?: { image: Express.Multer.File[] },
+  ) {
     this.logger.log(`Update attempt for category: ${id}`);
 
     const existing = await this.prisma.category.findUnique({
@@ -189,6 +221,19 @@ export class CategoriesService {
 
     if (!existing) {
       throw new NotFoundException('Category not found');
+    }
+
+    let coverResult: UploadResult | undefined;
+    try {
+      if (file?.image?.[0]) {
+        coverResult = await this.fileUploadService.uploadCategoryImage(
+          file.image[0],
+        );
+      }
+    } catch (error: unknown) {
+      const { message, stack } = formatError(error);
+      this.logger.error(`File upload failed during update: ${message}`, stack);
+      throw new InternalServerErrorException('Error while updating the files');
     }
 
     // If updating name, regenerate slug
@@ -219,8 +264,17 @@ export class CategoriesService {
         data: {
           ...dto,
           ...(slug && { slug }),
+          ...(coverResult && {
+            image: coverResult.path,
+            imageSize: coverResult.size,
+            imageOriginal: file?.image?.[0]?.originalname,
+          }),
         },
       });
+
+      if (coverResult && existing.image) {
+        await this.fileUploadService.deleteFile(existing.image);
+      }
 
       this.logger.log(`Category updated: ID=${id}`);
 

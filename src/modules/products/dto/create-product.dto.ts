@@ -117,20 +117,6 @@ export class CreateProductDto {
   @IsDate()
   saleEndsAt?: Date;
 
-  @ApiProperty({
-    description: 'Book cover image URL or file path',
-    example: '/uploads/books/clean-code-cover.jpg',
-  })
-  @IsString()
-  coverImage: string;
-
-  @ApiProperty({
-    description: 'Path or URL to the PDF file of the book',
-    example: '/uploads/books/clean-code.pdf',
-  })
-  @IsString()
-  pdfFile: string;
-
   @ApiPropertyOptional({
     example: 464,
     description: 'Number of pages in the book',

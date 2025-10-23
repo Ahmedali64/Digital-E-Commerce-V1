@@ -10,7 +10,9 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  UseInterceptors,
   ParseBoolPipe,
+  UploadedFiles,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -31,6 +33,8 @@ import {
 import { ErrorResponseDto } from 'src/common/dto';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
+import { MulterConfig } from 'src/config/multer.config';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
 
 @Controller('categories')
 @ApiTags('Categories')
@@ -42,6 +46,9 @@ export class CategoriesController {
   @Roles('ADMIN')
   @Throttle({ default: { limit: 5, ttl: 300 } })
   @HttpCode(HttpStatus.CREATED)
+  @UseInterceptors(
+    FileFieldsInterceptor([{ name: 'image', maxCount: 1 }], MulterConfig),
+  )
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a new category (Admin only)' })
   @ApiResponse({
@@ -69,12 +76,22 @@ export class CategoriesController {
     description: 'Category name already exists',
     type: ErrorResponseDto,
   })
-  async createCategory(@Body() createCategoryDto: CreateCategoryDto) {
-    return this.categoriesService.create(createCategoryDto);
+  async createCategory(
+    @Body() createCategoryDto: CreateCategoryDto,
+    @UploadedFiles()
+    file: {
+      image: Express.Multer.File[];
+    },
+  ) {
+    return this.categoriesService.create(createCategoryDto, file);
   }
+
   @Patch(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
+  @UseInterceptors(
+    FileFieldsInterceptor([{ name: 'image', maxCount: 1 }], MulterConfig),
+  )
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update category (Admin only)' })
   @ApiParam({ name: 'id', description: 'Category ID' })
@@ -96,9 +113,14 @@ export class CategoriesController {
   async updateCategory(
     @Param('id') id: string,
     @Body() updateCategoryDto: UpdateCategoryDto,
+    @UploadedFiles()
+    file?: {
+      image: Express.Multer.File[];
+    },
   ) {
-    return this.categoriesService.update(id, updateCategoryDto);
+    return this.categoriesService.update(id, updateCategoryDto, file);
   }
+
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')

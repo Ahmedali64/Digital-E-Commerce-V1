@@ -14,6 +14,7 @@ import { FilesModule } from './modules/files/files.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ScheduleTasksModule } from './modules/schedule-tasks/schedule-tasks.module';
 import { CartModule } from './modules/cart/cart.module';
+import { CacheModule } from '@nestjs/cache-manager';
 
 @Module({
   imports: [
@@ -25,6 +26,9 @@ import { CartModule } from './modules/cart/cart.module';
       },
     ]),
     ScheduleModule.forRoot(),
+    CacheModule.register({
+      isGlobal: true,
+    }),
     PrismaModule,
     AuthModule,
     LoggerModule,

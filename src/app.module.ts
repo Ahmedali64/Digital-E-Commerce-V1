@@ -13,6 +13,8 @@ import { ProductsModule } from './modules/products/products.module';
 import { FilesModule } from './modules/files/files.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ScheduleTasksModule } from './modules/schedule-tasks/schedule-tasks.module';
+import { CartModule } from './modules/cart/cart.module';
+import { CacheModule } from '@nestjs/cache-manager';
 
 @Module({
   imports: [
@@ -24,6 +26,9 @@ import { ScheduleTasksModule } from './modules/schedule-tasks/schedule-tasks.mod
       },
     ]),
     ScheduleModule.forRoot(),
+    CacheModule.register({
+      isGlobal: true,
+    }),
     PrismaModule,
     AuthModule,
     LoggerModule,
@@ -33,6 +38,7 @@ import { ScheduleTasksModule } from './modules/schedule-tasks/schedule-tasks.mod
     ProductsModule,
     FilesModule,
     ScheduleTasksModule,
+    CartModule,
   ],
   controllers: [AppController],
   providers: [AppService],

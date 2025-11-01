@@ -21,6 +21,12 @@ enum Language {
   OTHER
 }
 
+enum DiscountType {
+  PERCENTAGE
+  FIXED_AMOUNT
+}
+
+
 // --------------------- DataBase_Models ---------------------
 
 model User {
@@ -51,6 +57,8 @@ model User {
 
   // Relations
   refreshTokens           RefreshToken[]
+  cart                    Cart?              
+  discountUsages          DiscountUsage[]
 
   // The combination 'google-12345' is unique,
   // but 'github-12345' is still allowed.
@@ -110,7 +118,8 @@ model Product {
 
   // Relations
   category   Category  @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  
+  cartItems  CartItem[]
+
   // Indexes for performance
   @@index([title])                    // Search by title
   @@index([authorName])               // Search by authorName
@@ -141,4 +150,76 @@ model Category {
   products      Product[]
 
   @@map("categories")
+}
+
+model Cart {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     CartItem[]
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("carts")
+}
+
+model CartItem {
+  id         String   @id @default(uuid())
+  cartId     String
+  productId  String
+  priceAtAdd Decimal  @db.Decimal(10, 2) // Lock price when added
+  createdAt  DateTime @default(now())
+
+  cart    Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([cartId, productId]) // One product per cart only (no duplicates)
+  @@index([cartId])
+  @@index([productId])
+  @@map("cart_items")
+}
+
+model DiscountCode {
+  id               String    @id @default(uuid())
+  code             String    @unique
+  description      String?
+  discountType     DiscountType
+  discountValue    Decimal   @db.Decimal(10, 2) // Percentage or fixed amount
+  minPurchase      Decimal?  @db.Decimal(10, 2) // Minimum cart value
+  maxDiscount      Decimal?  @db.Decimal(10, 2) // Max discount amount (for percentage)
+  usageLimit       Int?      // Total times it can be used
+  usageCount       Int       @default(0)
+  perUserLimit     Int?      // Times per user
+  isActive         Boolean   @default(true)
+  startsAt         DateTime?
+  expiresAt        DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  // Relations
+  usages           DiscountUsage[]
+
+  @@index([code])
+  @@index([isActive, expiresAt])
+  @@map("discount_codes")
+}
+
+// Track who used which discount codes
+model DiscountUsage {
+  id             String   @id @default(uuid())
+  discountCodeId String
+  userId         String
+  orderId        String?  // Link to order when created
+  usedAt         DateTime @default(now())
+
+  discountCode   DiscountCode @relation(fields: [discountCodeId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([discountCodeId])
+  @@index([userId])
+  @@map("discount_usages")
 }

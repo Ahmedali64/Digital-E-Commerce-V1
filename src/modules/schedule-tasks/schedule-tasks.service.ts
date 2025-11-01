@@ -112,4 +112,54 @@ export class ScheduledTasksService {
       );
     }
   }
+
+  /**
+   * Clean up expired carts every day at 2 AM
+   */
+  @Cron(CronExpression.EVERY_DAY_AT_2AM)
+  async cleanupExpiredCarts() {
+    this.logger.log('Starting cleanup of expired carts...');
+
+    try {
+      // Find expired carts
+      const expiredCarts = await this.prisma.cart.findMany({
+        where: {
+          expiresAt: {
+            lt: new Date(),
+          },
+        },
+        select: {
+          id: true,
+          userId: true,
+        },
+      });
+
+      if (expiredCarts.length === 0) {
+        this.logger.log('No expired carts to clean up');
+        return;
+      }
+
+      // Delete cart items first (due to foreign key)
+      for (const cart of expiredCarts) {
+        await this.prisma.cartItem.deleteMany({
+          where: { cartId: cart.id },
+        });
+      }
+
+      // Delete carts
+      const result = await this.prisma.cart.deleteMany({
+        where: {
+          expiresAt: {
+            lt: new Date(),
+          },
+        },
+      });
+
+      this.logger.log(
+        `Expired carts cleanup completed: ${result.count} cart(s) deleted`,
+      );
+    } catch (error) {
+      this.logger.error('Failed to cleanup expired carts', error);
+    }
+  }
 }

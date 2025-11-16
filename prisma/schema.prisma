@@ -26,6 +26,27 @@ enum DiscountType {
   FIXED_AMOUNT
 }
 
+enum OrderStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CARD
+  MOBILE_WALLET
+  CASH          // This will not be used now maybe later in the future
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
 
 // --------------------- DataBase_Models ---------------------
 
@@ -59,6 +80,7 @@ model User {
   refreshTokens           RefreshToken[]
   cart                    Cart?              
   discountUsages          DiscountUsage[]
+  orders                  Order[]
 
   // The combination 'google-12345' is unique,
   // but 'github-12345' is still allowed.
@@ -119,7 +141,8 @@ model Product {
   // Relations
   category   Category  @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   cartItems  CartItem[]
-
+  orderItems OrderItem[]
+  
   // Indexes for performance
   @@index([title])                    // Search by title
   @@index([authorName])               // Search by authorName
@@ -222,4 +245,88 @@ model DiscountUsage {
   @@index([discountCodeId])
   @@index([userId])
   @@map("discount_usages")
+}
+
+model Order {
+  id                String      @id @default(uuid())
+  userId            String
+  
+  subtotal          Decimal     @db.Decimal(10, 2)
+  discountAmount    Decimal     @db.Decimal(10, 2)
+  total             Decimal     @db.Decimal(10, 2)
+  
+  discountCodeId    String?
+  discountCodeUsed  String?
+  
+  status            OrderStatus @default(PENDING)
+  
+  createdAt         DateTime    @default(now())
+  paidAt            DateTime?
+  updatedAt         DateTime    @updatedAt
+  
+  // Relations
+  user              User        @relation(fields: [userId], references: [id])
+  items             OrderItem[]
+  payment           Payment?    // One-to-one with payment
+  
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("orders")
+}
+
+model OrderItem {
+  id              String   @id @default(uuid())
+  orderId         String
+  productId       String
+  
+  title           String
+  authorName      String
+  price           Decimal  @db.Decimal(10, 2)
+  
+  pdfFile         String
+  
+  createdAt       DateTime @default(now())
+  
+  order           Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product         Product  @relation(fields: [productId], references: [id])
+  
+  @@index([orderId])
+  @@index([productId])
+  @@map("order_items")
+}
+
+model Payment {
+  id                    String        @id @default(uuid())
+  orderId               String        @unique  // One payment per order
+  
+  // Paymob specific
+  paymobTransactionId   String?       @unique  // Paymob's ID for this payment
+  paymobOrderId         String?
+  paymentMethod         PaymentMethod?
+  
+  // Money
+  amount                Decimal       @db.Decimal(10, 2)
+  currency              String        @default("EGP")
+  
+  status                PaymentStatus @default(PENDING)
+  
+  // Tracking
+  paidAt                DateTime?
+  failureReason         String?       @db.Text  // Why it failed (if it did)
+  
+  // Webhook verification
+  webhookReceived       Boolean       @default(false)
+  webhookData           Json?         // Store raw webhook for debugging
+  
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  
+  // Relations
+  order                 Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  
+  @@index([orderId])
+  @@index([paymobTransactionId])
+  @@index([status])
+  @@map("payments")
 }

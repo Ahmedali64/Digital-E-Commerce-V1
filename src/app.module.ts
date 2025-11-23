@@ -15,6 +15,9 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { ScheduleTasksModule } from './modules/schedule-tasks/schedule-tasks.module';
 import { CartModule } from './modules/cart/cart.module';
 import { CacheModule } from '@nestjs/cache-manager';
+import { OrdersModule } from './modules/orders/orders.module';
+import { PaymentModule } from './modules/payment/payment.module';
+import { WebhooksModule } from './modules/webhooks/webhooks.module';
 
 @Module({
   imports: [
@@ -39,6 +42,9 @@ import { CacheModule } from '@nestjs/cache-manager';
     FilesModule,
     ScheduleTasksModule,
     CartModule,
+    OrdersModule,
+    PaymentModule,
+    WebhooksModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -16,14 +16,18 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { CreateOrderDto, OrderResponseDto } from './dto';
+import {
+  CreateOrderDto,
+  CreateOrderResponseDto,
+  OrderResponseDto,
+} from './dto';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { ErrorResponseDto } from 'src/common/dto';
 import { GetUser } from 'src/common/decorators/get-user.decorator';
 
 @Controller('orders')
 @ApiTags('Orders')
-@UseGuards(JwtAuthGuard) // All routes require authentication
+@UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
@@ -34,7 +38,7 @@ export class OrdersController {
   @ApiResponse({
     status: HttpStatus.CREATED,
     description: 'Order created successfully, payment URL returned',
-    // We'll update this after Paymob integration
+    type: CreateOrderResponseDto,
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
@@ -50,13 +54,12 @@ export class OrdersController {
     @GetUser('id') userId: string,
     @Body() dto: CreateOrderDto,
   ) {
-    const order = await this.ordersService.createOrder(userId, dto);
+    const result = await this.ordersService.createOrder(userId, dto);
 
-    // TODO: After we add Paymob, we'll return payment URL here
     return {
-      message: 'Order created successfully',
-      order,
-      // paymentUrl: '...' // Will add this next
+      message: 'Order created successfully. Redirect user to payment URL.',
+      order: result.order,
+      paymentUrl: result.paymentUrl,
     };
   }
 

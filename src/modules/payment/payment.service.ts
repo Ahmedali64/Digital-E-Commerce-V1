@@ -132,7 +132,6 @@ export class PaymentService {
     this.logger.log(`Creating payment for order: ${orderId}`);
 
     // Convert EGP to cents (Paymob uses cents to avoid floating point issues)
-    // Example: 100.50 EGP = 10050 cents
     const amountCents = Math.round(amount * 100);
 
     // Step 1: Get authentication token

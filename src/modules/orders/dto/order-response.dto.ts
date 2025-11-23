@@ -48,12 +48,18 @@ export class OrderResponseDto {
 }
 
 export class CreateOrderResponseDto {
-  @ApiProperty()
+  @ApiProperty({
+    example: 'Order created successfully. Redirect user to payment URL.',
+  })
   message: string;
 
-  @ApiProperty()
+  @ApiProperty({ type: OrderResponseDto })
   order: OrderResponseDto;
 
-  @ApiProperty()
+  @ApiProperty({
+    example:
+      'https://accept.paymob.com/api/acceptance/iframes/123?payment_token=xyz',
+    description: 'URL to redirect user for payment',
+  })
   paymentUrl: string;
 }

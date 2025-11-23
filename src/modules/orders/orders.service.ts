@@ -134,7 +134,7 @@ export class OrdersService {
 
     this.logger.log(`Order created: ${order.id} - Total: ${total} EGP`);
 
-    // NEW: Get user info for payment
+    //Get user info for payment
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -144,7 +144,7 @@ export class OrdersService {
       },
     });
 
-    // NEW: Create payment URL
+    // Create payment URL
     const userName = `${user?.firstName} ${user?.lastName}`;
     const paymentUrl = await this.paymentService.createPayment(
       order.id,

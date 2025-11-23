@@ -10,6 +10,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { CartDto } from './dto';
 import type { Cache } from 'cache-manager';
+import { calculateDiscount } from 'src/common/utils/calculate-discount.util';
 
 @Injectable()
 export class CartService {
@@ -324,7 +325,7 @@ export class CartService {
       });
 
       if (discount && discount.isActive) {
-        discountAmount = this.calculateDiscount(
+        discountAmount = calculateDiscount(
           subtotal,
           discount.discountType,
           Number(discount.discountValue),
@@ -355,26 +356,6 @@ export class CartService {
       expiresAt: cart.expiresAt,
       updatedAt: cart.updatedAt,
     };
-  }
-
-  private calculateDiscount(
-    subtotal: number,
-    type: 'PERCENTAGE' | 'FIXED_AMOUNT',
-    value: number,
-    maxDiscount: number | null,
-  ): number {
-    let discount = 0;
-
-    if (type === 'PERCENTAGE') {
-      discount = (subtotal * value) / 100;
-      if (maxDiscount && discount > maxDiscount) {
-        discount = maxDiscount;
-      }
-    } else {
-      discount = value;
-    }
-
-    return Math.min(discount, subtotal); // Don't discount more than subtotal
   }
 
   private async invalidateCache(userId: string): Promise<void> {

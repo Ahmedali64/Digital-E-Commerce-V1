@@ -7,16 +7,34 @@ import helmet from 'helmet';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import rateLimit from 'express-rate-limit';
-
+import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Replace nest defalut logger with ours
-  app.useLogger(app.get(WINSTON_MODULE_NEST_PROVIDER));
-
+  // We will move this here so we can get out .env vars from .env file
   const configService = app.get(ConfigService);
   const PORT = configService.get<number>('PORT', 3000);
   const ENVIRONMENT = configService.get<string>('NODE_ENV', 'Development');
+  const RMQ_URL = configService.get<string>(
+    'RABBITMQ_URL',
+    'amqp://localhost:5672',
+  );
+  const queue_name = configService.get<string>('RABBITMQ_QUEUE', 'email_queue');
+
+  // We will add microservice functionality (RabbitMQ)
+  app.connectMicroservice<MicroserviceOptions>({
+    transport: Transport.RMQ,
+    options: {
+      urls: [RMQ_URL], // RMQ Server URL
+      queue: queue_name, // Queue name
+      queueOptions: {
+        durable: true, // True, so when the server crashes, existing messages in the queue aren't lost
+      },
+    },
+  });
+
+  // Replace nest defalut logger with ours
+  app.useLogger(app.get(WINSTON_MODULE_NEST_PROVIDER));
 
   const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
@@ -72,10 +90,12 @@ async function bootstrap() {
 
   // Graceful shutdown
   app.enableShutdownHooks();
+  await app.startAllMicroservices();
   await app.listen(PORT);
 
   console.log(
     `Application is running on port ${PORT}, Environmet: ${ENVIRONMENT}, Test: http://localhost:3000/`,
   );
+  console.log(`RabbitMQ connected to queue: ${queue_name}`);
 }
 void bootstrap();

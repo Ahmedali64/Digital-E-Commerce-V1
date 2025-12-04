@@ -69,6 +69,7 @@ export class OrdersService {
       throw new BadRequestException('Order total cannot be zero or negative');
     }
 
+    // We have cart items + discount if provided
     const order = await this.prisma.$transaction(async (tx) => {
       // Create the order/order items
       const newOrder = await tx.order.create({

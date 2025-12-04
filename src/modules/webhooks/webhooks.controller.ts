@@ -26,6 +26,9 @@ export class WebhooksController {
   @Post('paymob')
   @HttpCode(HttpStatus.OK)
   @ApiExcludeEndpoint()
+  /**
+   * payload is the data that paymob sent to us to verify that user payment went successfully
+   */
   async handlePaymobWebhook(@Body() payload: PaymobWebhookData) {
     this.logger.log('Paymob webhook received');
 
@@ -95,6 +98,7 @@ export class WebhooksController {
         ? transaction.data.message
         : 'Payment failed';
 
+    //Here
     if (transaction.success) {
       this.logger.log(`Payment succeeded for order: ${ourOrderId}`);
 

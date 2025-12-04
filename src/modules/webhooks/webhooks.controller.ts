@@ -5,6 +5,7 @@ import {
   HttpStatus,
   Logger,
   Post,
+  Query,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ApiExcludeEndpoint, ApiTags } from '@nestjs/swagger';
@@ -12,6 +13,7 @@ import { PaymentService } from '../payment/payment.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { OrderStatus, PaymentStatus, Prisma } from '@prisma/client';
 import type { PaymobWebhookData } from '../payment/interfaces/payment.interface';
+import { QueueService } from '../queue/queue.service';
 
 @Controller('webhooks')
 @ApiTags('Webhooks')
@@ -21,12 +23,19 @@ export class WebhooksController {
   constructor(
     private readonly paymentService: PaymentService,
     private readonly prisma: PrismaService,
+    private readonly queueService: QueueService,
   ) {}
 
   @Post('paymob')
   @HttpCode(HttpStatus.OK)
   @ApiExcludeEndpoint()
-  async handlePaymobWebhook(@Body() payload: PaymobWebhookData) {
+  /**
+   * payload is the data that paymob sent to us to verify that user payment went successfully
+   */
+  async handlePaymobWebhook(
+    @Body() payload: PaymobWebhookData,
+    @Query('hmac') hmac: string,
+  ) {
     this.logger.log('Paymob webhook received');
 
     const transaction = payload.obj;
@@ -46,14 +55,14 @@ export class WebhooksController {
       is_refunded: transaction.is_refunded,
       is_standalone_payment: transaction.is_standalone_payment,
       is_voided: transaction.is_voided,
-      order: transaction.order,
+      order: { id: transaction.order.id },
       owner: transaction.owner,
       pending: transaction.pending,
       source_data_pan: transaction.source_data.pan,
       source_data_sub_type: transaction.source_data.sub_type,
       source_data_type: transaction.source_data.type,
       success: transaction.success,
-      hmac: payload.hmac,
+      hmac: hmac,
     });
 
     if (!isValid) {
@@ -61,7 +70,7 @@ export class WebhooksController {
       throw new UnauthorizedException('Invalid signature');
     }
 
-    this.logger.log('Webhook signature verified ✓');
+    this.logger.log('Webhook signature verified');
 
     const ourOrderId = transaction.order.merchant_order_id;
 
@@ -95,6 +104,7 @@ export class WebhooksController {
         ? transaction.data.message
         : 'Payment failed';
 
+    // Here
     if (transaction.success) {
       this.logger.log(`Payment succeeded for order: ${ourOrderId}`);
 
@@ -121,7 +131,18 @@ export class WebhooksController {
         });
       });
 
-      this.logger.log(`Order ${ourOrderId} marked as PAID ✓`);
+      this.logger.log(`Order ${ourOrderId} marked as PAID`);
+      // Send job to the queue
+      try {
+        await this.queueService.sendPaymentReceiptEmail(ourOrderId);
+        this.logger.log(`Email job queued for order: ${ourOrderId}`);
+      } catch (error) {
+        // Don't fail webhook if email queueing fails
+        this.logger.error(
+          `Failed to queue email for order: ${ourOrderId}`,
+          error,
+        );
+      }
     } else {
       this.logger.warn(`Payment failed for order: ${ourOrderId}`);
 

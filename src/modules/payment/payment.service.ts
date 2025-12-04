@@ -207,6 +207,7 @@ export class PaymentService {
         source_data_sub_type,
         source_data_type,
         success,
+        hmac,
       } = data;
 
       // Paymob's exact concatenation order (DO NOT CHANGE)
@@ -225,7 +226,7 @@ export class PaymentService {
         .update(concatenated)
         .digest('hex');
 
-      const receivedHmac = data.hmac;
+      const receivedHmac = hmac;
 
       // Compare signatures (constant-time comparison would be better in production)
       const isValid = calculatedHmac === receivedHmac;

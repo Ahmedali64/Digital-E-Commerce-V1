@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Receipt</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            border-radius: 10px 10px 0 0;
+        }
+        .content {
+            background: #f9f9f9;
+            padding: 30px;
+            border-radius: 0 0 10px 10px;
+        }
+        .order-details {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .order-item {
+            border-bottom: 1px solid #eee;
+            padding: 15px 0;
+        }
+        .order-item:last-child {
+            border-bottom: none;
+        }
+        .total {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+            text-align: right;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid #667eea;
+        }
+        .download-btn {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #666;
+            font-size: 12px;
+        }
+        .success-badge {
+            background: #10b981;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            display: inline-block;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎉 Payment Successful!</h1>
+        <p>Thank you for your purchase, {{name}}!</p>
+    </div>
+    
+    <div class="content">
+        <p>Your payment has been processed successfully. Here are your order details:</p>
+        
+        <div class="order-details">
+            <p><strong>Order ID:</strong> {{orderId}}</p>
+            <p><strong>Date:</strong> {{orderDate}}</p>
+            <p><strong>Status:</strong> <span class="success-badge">✓ PAID</span></p>
+            
+            {{#if transactionId}}
+            <p><strong>Transaction ID:</strong> {{transactionId}}</p>
+            {{/if}}
+            
+            <h3>Items Purchased:</h3>
+            {{#each items}}
+            <div class="order-item">
+                <strong>{{this.title}}</strong><br>
+                <em>by {{this.authorName}}</em><br>
+                <span style="color: #667eea; font-weight: bold;">{{this.price}} EGP</span>
+            </div>
+            {{/each}}
+            
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee;">
+                <p style="display: flex; justify-content: space-between;">
+                    <span>Subtotal:</span>
+                    <strong>{{subtotal}} EGP</strong>
+                </p>
+                {{#if discount}}
+                <p style="display: flex; justify-content: space-between; color: #10b981;">
+                    <span>Discount{{#if discountCode}} ({{discountCode}}){{/if}}:</span>
+                    <strong>-{{discount}} EGP</strong>
+                </p>
+                {{/if}}
+            </div>
+            
+            <div class="total">
+                Total Paid: {{total}} EGP
+            </div>
+        </div>
+        
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="{{downloadUrl}}" class="download-btn">📚 Access Your Books</a>
+        </div>
+        
+        <p style="color: #666; font-size: 14px;">
+            You can access your purchased books anytime from your <a href="{{myOrdersUrl}}">My Orders</a> page.
+        </p>
+    </div>
+    
+    <div class="footer">
+        <p>Need help? Contact us at support@yoursite.com</p>
+        <p>&copy; 2024 Digital E-Commerce. All rights reserved.</p>
+    </div>
+</body>
+</html>

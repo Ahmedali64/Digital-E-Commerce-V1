@@ -1,7 +1,7 @@
 export function calculateDiscount(
   subtotal: number,
   type: string,
-  value: number,
+  value: number, // percentage or value
   maxDiscount: number | null,
 ): number {
   let discount = 0;

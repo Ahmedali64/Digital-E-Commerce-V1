@@ -18,6 +18,7 @@ import { CacheModule } from '@nestjs/cache-manager';
 import { OrdersModule } from './modules/orders/orders.module';
 import { PaymentModule } from './modules/payment/payment.module';
 import { WebhooksModule } from './modules/webhooks/webhooks.module';
+import { QueueModule } from './modules/queue/queue.module';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { WebhooksModule } from './modules/webhooks/webhooks.module';
     OrdersModule,
     PaymentModule,
     WebhooksModule,
+    QueueModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -4,6 +4,8 @@ generator client {
 
 datasource db {
   provider = "mysql"
+  // This is for docker only not for the app
+  url      = env("DATABASE_URL")
 }
 
 enum Role {

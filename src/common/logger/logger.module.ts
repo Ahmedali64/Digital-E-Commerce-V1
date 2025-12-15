@@ -7,7 +7,7 @@ import * as fs from 'fs';
 
 const logDir = 'logs';
 if (!fs.existsSync(logDir)) {
-  fs.mkdirSync(logDir);
+  fs.mkdirSync(logDir, { recursive: true });
 }
 
 @Module({

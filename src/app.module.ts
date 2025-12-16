@@ -19,6 +19,9 @@ import { OrdersModule } from './modules/orders/orders.module';
 import { PaymentModule } from './modules/payment/payment.module';
 import { WebhooksModule } from './modules/webhooks/webhooks.module';
 import { QueueModule } from './modules/queue/queue.module';
+import { HealthController } from './modules/health/health.controller';
+import { HealthModule } from './modules/health/health.module';
+import { TerminusModule } from '@nestjs/terminus';
 
 @Module({
   imports: [
@@ -33,6 +36,7 @@ import { QueueModule } from './modules/queue/queue.module';
     CacheModule.register({
       isGlobal: true,
     }),
+    TerminusModule,
     PrismaModule,
     AuthModule,
     LoggerModule,
@@ -47,8 +51,9 @@ import { QueueModule } from './modules/queue/queue.module';
     PaymentModule,
     WebhooksModule,
     QueueModule,
+    HealthModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, HealthController],
   providers: [AppService],
 })
 export class AppModule {}

@@ -227,12 +227,19 @@ export class OrdersService {
       })),
     };
   }
-  // Helpers
+
+  /**
+   * @param code
+   * @param userId
+   * @param subtotal
+   * @returns discount value
+   */
   private async validateAndGetDiscount(
     code: string,
     userId: string,
     subtotal: number,
   ) {
+    // Get discount code
     const discount = await this.prisma.discountCode.findUnique({
       where: { code: code.toUpperCase() },
     });

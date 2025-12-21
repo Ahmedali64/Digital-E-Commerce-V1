@@ -15,6 +15,10 @@ jobs:
     # What operating system to use
     runs-on: ubuntu-latest
     
+    # This is a fix (We have to add a Database URL so we can make a client)
+    env:
+      DATABASE_URL: "mysql://test:test@localhost:3306/test"
+
     # Steps to execute (in order)
     steps:
       # 1- Download code from GitHub

@@ -1,0 +1,50 @@
+# Name of this workflow (shows in GitHub UI)
+name: Run Tests
+
+# When to run this workflow
+on:
+  push:
+    branches: [main, 'feature/**']  # Only run on main
+  pull_request:
+    branches: [main]  # Only run on PRs to main
+
+# Define the jobs to run
+jobs:
+  test:  # Job name
+    name: Test & Lint
+    # What operating system to use
+    runs-on: ubuntu-latest
+    
+    # This is a fix (We have to add a Database URL so we can make a client)
+    env:
+      DATABASE_URL: "mysql://test:test@localhost:3306/test"
+
+    # Steps to execute (in order)
+    steps:
+      # 1- Download code from GitHub
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      # 2- Install Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      
+      # 3- Install dependencies
+      - name: Install dependencies
+        run: npm ci
+
+      # This is a fix (We have to make a client because we are running tests on a new machine)
+      - name: Generate Prisma Client
+        run: npx prisma generate
+      
+      # 4- Run linter
+      - name: Lint code
+        run: npm run lint
+
+      # 5- Run tests with coverage
+      # Coverage = What % of your code is tested
+      - name: Run tests
+        run: npm run test:cov

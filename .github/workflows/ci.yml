@@ -4,29 +4,43 @@ name: Run Tests
 # When to run this workflow
 on:
   push:
-    branches: [main, develop]  # Only run on main and develop
+    branches: [main, 'feature/**']  # Only run on main
   pull_request:
-    branches: [main]           # Only run on PRs to main
+    branches: [main]  # Only run on PRs to main
 
 # Define the jobs to run
 jobs:
   test:  # Job name
+    name: Test & Lint
     # What operating system to use
     runs-on: ubuntu-latest
     
     # Steps to execute (in order)
     steps:
-      # Step 1: Download code from GitHub
-      - uses: actions/checkout@v4
+      # 1- Download code from GitHub
+      - name: Checkout code
+        uses: actions/checkout@v4
       
-      # Step 2: Install Node.js
-      - uses: actions/setup-node@v4
+      # 2- Install Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: 'npm'
       
-      # Step 3: Install dependencies
-      - run: npm ci
+      # 3- Install dependencies
+      - name: Install dependencies
+        run: npm ci
+
+      # This is a fix (We have to make a client because we are running tests on a new machine)
+      - name: Generate Prisma Client
+        run: npx prisma generate
       
-      # Step 4: Run tests
-      - run: npm test
+      # 4- Run linter
+      - name: Lint code
+        run: npm run lint
+
+      # 5- Run tests with coverage
+      # Coverage = What % of your code is tested
+      - name: Run tests
+        run: npm run test:cov

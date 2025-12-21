@@ -1,0 +1,32 @@
+# Name of this workflow (shows in GitHub UI)
+name: Run Tests
+
+# When to run this workflow
+on:
+  push:
+    branches: [main, develop]  # Only run on main and develop
+  pull_request:
+    branches: [main]           # Only run on PRs to main
+
+# Define the jobs to run
+jobs:
+  test:  # Job name
+    # What operating system to use
+    runs-on: ubuntu-latest
+    
+    # Steps to execute (in order)
+    steps:
+      # Step 1: Download code from GitHub
+      - uses: actions/checkout@v4
+      
+      # Step 2: Install Node.js
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      
+      # Step 3: Install dependencies
+      - run: npm ci
+      
+      # Step 4: Run tests
+      - run: npm test

@@ -1,8 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { formatError, getErrorMessage } from 'src/common/utils/error.util';
-import { FilesService } from '../files/files.service';
-import { PrismaService } from '../prisma/prisma.service';
+import { FilesService } from 'src/modules/files/files.service';
+import { PrismaService } from 'src/modules/prisma/prisma.service';
 
 @Injectable()
 export class ScheduledTasksService {

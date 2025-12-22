@@ -1,98 +1,190 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Digital Books Store
+> A modern, scalable platform for selling digital Books built with NestJS, TypeScript
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+## Features
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+### Authentication & Authorization
+- JWT-based authentication with refresh tokens
+- OAuth 2.0 integration (Google, GitHub)
+- Role-based access control (Admin, Customer)
+- Email verification and password reset
 
-## Description
+### E-Commerce Core
+- Product catalog with categories
+- Shopping cart with price locking
+- Discount code system with validation
+- Order management and tracking
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+### Payment Processing
+- Paymob payment gateway integration
+- Secure webhook handling with HMAC verification
+- Automatic payment receipt emails
+- Transaction tracking and reconciliation
 
-## Project setup
+### Asynchronous Processing
+- RabbitMQ message queue for background jobs
+- Email queue with retry logic
+- Scalable worker architecture
 
+### Database & Caching
+- MySQL with Prisma ORM
+- Redis caching
+- Optimized queries with proper indexing
+- Soft deletes for data integrity
+
+### DevOps & Infrastructure
+- Docker containerization
+- Docker Compose for local development
+- CI/CD with GitHub Actions
+- Health checks and monitoring endpoints
+- Automated testing pipeline
+
+### Code Quality
+- TypeScript strict mode
+- ESLint + Prettier
+- Unit tests (Jest)
+- E2E tests (Supertest)
+- Comprehensive logging (Winston)
+
+### Installation
+
+1. Clone the repository
 ```bash
-$ npm install
+https://github.com/Ahmedali64/Digital-E-Commerce-V1.git
+cd Digital-E-Commerce-V
 ```
 
-## Compile and run the project
-
+2. Install dependencies
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+npm install
 ```
 
-## Run tests
-
+3. Set up environment variables
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+cp .env.example .env
+# Edit .env with your configuration
 ```
+
+4. Start with Docker Compose
+```bash
+docker-compose up -d
+```
+
+5. Run migrations
+```bash
+npm prisma:migrate
+```
+
+6. Access the API
+- API: http://localhost:3000
+- Swagger Docs: http://localhost:3000/api/docs
+- RabbitMQ UI: http://localhost:15672
+- 
+
+## 📖 API Documentation
+
+Full API documentation is available via Swagger at `/api/docs` when running the application 
+
+or Full API documentation (with example requests and responses) is available here:  
+[View in Postman](https://documenter.getpostman.com/view/21578024/2sB3dWrSUS)
+
+## Tech Stack
+- **Runtime**: Node.js 20
+- **Framework**: NestJS 10
+- **Language**: TypeScript 5
+- **Database**: MySQL 8.0
+- **ORM**: Prisma 7
+- **Cache**: Redis 7
+- **Queue**: RabbitMQ 3
+- **Email**: NodeMailer
+- **Payment**: Paymob
+- **Testing**: Jest, Supertest
+- **Documentation**: Swagger/OpenAPI
+
+### Project Structure
+```
+src/
+├── modules/
+│   ├── auth/          # Authentication & authorization
+│   ├── users/         # User management
+│   ├── products/      # Product catalog
+│   ├── categories/    # Product categories
+│   ├── cart/          # Shopping cart
+│   ├── orders/        # Order management
+│   ├── payment/       # Paymob integration
+│   ├── queue/         # RabbitMQ producers & consumers
+│   ├── mail/          # Email service
+│   └── webhooks/      # Payment webhooks
+├── common/            # Shared utilities & decorators
+├── config/            # Configuration files
+└── prisma/            # Database schema & migrations
+```
+
+### Design Patterns
+- **Repository Pattern** (Prisma)
+- **Dependency Injection** (NestJS IoC)
+- **Queue Pattern** (RabbitMQ)
+- **Webhook Pattern** (Payment callbacks)
+- **Strategy Pattern** (OAuth providers)
+
+## Testing
+```bash
+# Unit tests
+npm run test
+
+# E2E tests
+npm run test:e2e
+
+# Test coverage
+npm run test:cov
+```
+## Security Features
+
+- Helmet.js for HTTP headers
+- CORS configuration
+- Rate limiting (Express Rate Limit + Throttler)
+- JWT with refresh token rotation
+- Password hashing (bcrypt)
+- HMAC signature verification for webhooks
+- Input validation (class-validator)
+- SQL injection protection (Prisma)
+
+## Monitoring & Observability
+
+- Health check endpoints (`/health`)
+- Structured logging with Winston
+- Request/response logging
+- Error tracking and stack traces
+- Performance metrics ready
+- Standalone app for CORN jobs to save server performance
 
 ## Deployment
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
+### Docker Production Build
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+docker-compose -f docker-compose.yml up -d
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+### Environment Variables
+See `.env.example` for all required environment variables.
 
-## Resources
+Key variables:
+- `DATABASE_URL` - MySQL connection string
+- `JWT_SECRET` - Secret for JWT signing
+- `PAYMOB_API_KEY` - Paymob API credentials
+- `RABBITMQ_URL` - RabbitMQ connection string
 
-Check out a few resources that may come in handy when working with NestJS:
+## Contributing
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'feat: add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-## Support
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+## Author
 
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+**Your Name**
+- GitHub: [@ahmedali64](https://github.com/Ahmedali64)
+- LinkedIn: [Ahmed Ali](www.linkedin.com/in/ahmed-ali-esmail)

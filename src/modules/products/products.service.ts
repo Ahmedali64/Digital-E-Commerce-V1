@@ -214,7 +214,7 @@ export class ProductsService {
       page = 1,
     } = query;
 
-    // A where clause that we will use to retrieve products with searching and filtering options
+    // A where clause that we will use to retrieve products with searching and filtering options (attach our search options to it )
     const where: Prisma.ProductWhereInput = {
       deletedAt: null,
       isPublished: true,
@@ -250,6 +250,7 @@ export class ProductsService {
       where.saleEndsAt = { gte: new Date() };
     }
 
+    // Here we are doing the same as where we are just attaching sort options
     let orderBy: Prisma.ProductOrderByWithRelationInput = {};
     switch (sortBy) {
       case SortBy.NEWEST:

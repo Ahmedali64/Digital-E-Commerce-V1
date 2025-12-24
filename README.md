@@ -1,5 +1,6 @@
 # Digital Books Store
-> A modern, scalable platform for selling digital Books built with NestJS, TypeScript
+
+A modern, scalable platform for selling digital books built with NestJS and TypeScript.
 
 ## Features
 
@@ -46,12 +47,12 @@
 - E2E tests (Supertest)
 - Comprehensive logging (Winston)
 
-### Installation
+## Installation
 
 1. Clone the repository
 ```bash
-https://github.com/Ahmedali64/Digital-E-Commerce-V1.git
-cd Digital-E-Commerce-V
+git clone https://github.com/Ahmedali64/Digital-E-Commerce-V1.git
+cd Digital-E-Commerce-V1
 ```
 
 2. Install dependencies
@@ -72,20 +73,19 @@ docker-compose up -d
 
 5. Run migrations
 ```bash
-npm prisma:migrate
+npm run prisma:migrate
 ```
 
 6. Access the API
 - API: http://localhost:3000
 - Swagger Docs: http://localhost:3000/api/docs
 - RabbitMQ UI: http://localhost:15672
-- 
 
-## 📖 API Documentation
+## API Documentation
 
-Full API documentation is available via Swagger at `/api/docs` when running the application 
+Full API documentation is available via Swagger at `/api/docs` when running the application.
 
-or Full API documentation (with example requests and responses) is available here:  
+Alternatively, view the complete API documentation with example requests and responses here:  
 [View in Postman](https://documenter.getpostman.com/view/21578024/2sB3dWrSUS)
 
 ## Tech Stack
@@ -100,8 +100,10 @@ or Full API documentation (with example requests and responses) is available her
 - **Payment**: Paymob
 - **Testing**: Jest, Supertest
 - **Documentation**: Swagger/OpenAPI
+- **Load Balancer**: Nginx
+- **Process Manager**: PM2
 
-### Project Structure
+## Project Structure
 ```
 src/
 ├── modules/
@@ -120,7 +122,7 @@ src/
 └── prisma/            # Database schema & migrations
 ```
 
-### Design Patterns
+## Design Patterns
 - **Repository Pattern** (Prisma)
 - **Dependency Injection** (NestJS IoC)
 - **Queue Pattern** (RabbitMQ)
@@ -138,8 +140,8 @@ npm run test:e2e
 # Test coverage
 npm run test:cov
 ```
-## Security Features
 
+## Security Features
 - Helmet.js for HTTP headers
 - CORS configuration
 - Rate limiting (Express Rate Limit + Throttler)
@@ -150,13 +152,12 @@ npm run test:cov
 - SQL injection protection (Prisma)
 
 ## Monitoring & Observability
-
 - Health check endpoints (`/health`)
 - Structured logging with Winston
 - Request/response logging
 - Error tracking and stack traces
 - Performance metrics ready
-- Standalone app for CORN jobs to save server performance
+- Standalone app for CRON jobs to save server performance
 
 ## Deployment
 
@@ -174,17 +175,77 @@ Key variables:
 - `PAYMOB_API_KEY` - Paymob API credentials
 - `RABBITMQ_URL` - RabbitMQ connection string
 
-## Contributing
+### Production Setup with Nginx Load Balancer
 
+#### Architecture Components
+1. **Nginx** - Reverse proxy, load balancer, cache layer, rate limiter
+2. **PM2** - Process manager running 4 Node.js instances
+3. **Docker Compose** - Orchestrates all services
+
+#### Running in Production
+```bash
+# Build production image
+docker-compose build
+
+# Start all services with Nginx load balancer
+docker-compose up -d
+
+# Check Nginx status
+docker-compose logs -f nginx
+
+# View PM2 processes
+pm2 status
+
+# Monitor performance
+pm2 monit
+```
+
+#### Scaling Horizontally
+To add more instances, edit `ecosystem.config.js`:
+```javascript
+{
+  name: 'app-5',
+  script: 'dist/src/main.js',
+  instances: 1,
+  env: { PORT: 3004, INSTANCE_ID: 'app-5' }
+}
+```
+
+Then update `nginx.conf`:
+```nginx
+upstream my_app {
+    server host.docker.internal:3000;
+    server host.docker.internal:3001;
+    server host.docker.internal:3002;
+    server host.docker.internal:3003;
+    server host.docker.internal:3004; # New instance
+}
+```
+
+#### Health Monitoring
+Access monitoring endpoints:
+- **Health Check**: `http://localhost/health`
+- **Load Balancer Stats**: Check `X-Served-By` header
+- **Cache Status**: Check `X-Cache-Status` header (HIT/MISS/BYPASS)
+- **Nginx Logs**: `docker-compose logs -f nginx`
+
+#### Zero-Downtime Deployment
+```bash
+# Reload Nginx config without downtime
+docker-compose exec nginx nginx -s reload
+
+# Rolling restart of app instances
+pm2 reload ecosystem.config.js --update-env
+```
+
+## Contributing
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
 3. Commit your changes (`git commit -m 'feat: add amazing feature'`)
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-
 ## Author
-
-**Your Name**
+**Ahmed Ali**
 - GitHub: [@ahmedali64](https://github.com/Ahmedali64)
-- LinkedIn: [Ahmed Ali](www.linkedin.com/in/ahmed-ali-esmail)
+- LinkedIn: [Ahmed Ali](https://www.linkedin.com/in/ahmed-ali-esmail)

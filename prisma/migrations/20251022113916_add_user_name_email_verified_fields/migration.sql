@@ -6,7 +6,7 @@
 
 */
 -- AlterTable
-ALTER TABLE `user` ADD COLUMN `emailVerifiedAt` DATETIME(3) NULL,
+ALTER TABLE `User` ADD COLUMN `emailVerifiedAt` DATETIME(3) NULL,
     ADD COLUMN `firstName` VARCHAR(191) NOT NULL,
     ADD COLUMN `isEmailVerified` BOOLEAN NOT NULL DEFAULT false,
     ADD COLUMN `lastName` VARCHAR(191) NOT NULL;

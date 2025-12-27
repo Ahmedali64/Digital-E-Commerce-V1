@@ -5,7 +5,7 @@
 
 */
 -- AlterTable
-ALTER TABLE `user` MODIFY `provider` ENUM('LOCAL', 'GOOGLE', 'GITHUB') NULL;
+ALTER TABLE `User` MODIFY `provider` ENUM('LOCAL', 'GOOGLE', 'GITHUB') NULL;
 
 -- CreateTable
 CREATE TABLE `products` (

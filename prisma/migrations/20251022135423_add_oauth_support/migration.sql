@@ -5,7 +5,7 @@
 
 */
 -- AlterTable
-ALTER TABLE `user` ADD COLUMN `avatar` VARCHAR(191) NULL,
+ALTER TABLE `User` ADD COLUMN `avatar` VARCHAR(191) NULL,
     ADD COLUMN `provider` VARCHAR(191) NULL,
     ADD COLUMN `providerId` VARCHAR(191) NULL,
     MODIFY `password` VARCHAR(191) NULL;

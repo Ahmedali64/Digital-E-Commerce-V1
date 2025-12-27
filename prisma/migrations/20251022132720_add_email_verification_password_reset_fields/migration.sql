@@ -6,7 +6,7 @@
 
 */
 -- AlterTable
-ALTER TABLE `user` ADD COLUMN `emailVerificationToken` VARCHAR(191) NULL,
+ALTER TABLE `User` ADD COLUMN `emailVerificationToken` VARCHAR(191) NULL,
     ADD COLUMN `emailVerificationTokenExpiry` DATETIME(3) NULL,
     ADD COLUMN `passwordResetExpires` DATETIME(3) NULL,
     ADD COLUMN `passwordResetToken` VARCHAR(191) NULL;

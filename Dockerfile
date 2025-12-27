@@ -10,7 +10,7 @@ COPY prisma ./prisma/
 # Install dependencies
 RUN npm ci
 
-# Args we added this build time var just cause the client get it cause he can not get it from the file acuse it is a run time var not a build time var
+# # Args we added this build time var just cause the client get it cause he can not get it from the file acuse it is a run time var not a build time var
 ARG DATABASE_URL
 ENV DATABASE_URL=${DATABASE_URL}
 
@@ -28,16 +28,13 @@ FROM node:22-alpine AS production
 
 WORKDIR /app
 
-# Args
-ARG DATABASE_URL
-ENV DATABASE_URL=${DATABASE_URL}
-
 # Install only production dependencies
 COPY package*.json ./
 COPY prisma ./prisma/
+COPY ecosystem.config.js ./
 
 RUN npm ci --only=production && \
-    npx prisma generate && \
+    npm install -g pm2 && \
     npm cache clean --force
 
 # Copy built application from builder stage
@@ -50,10 +47,10 @@ RUN addgroup -g 1001 -S nodejs && \
 
 # Create uploads directory with proper permissions
 RUN mkdir -p /app/uploads/products/covers /app/uploads/products/pdfs /app/logs && \
-    chown -R nestjs:nodejs /app/uploads /app/logs
+    chown -R nestjs:nodejs /app
 
 USER nestjs
 
-EXPOSE 3000
+EXPOSE 3000 3001 3002 3003
 
-CMD ["node", "dist/src/main"]
+CMD ["pm2-runtime", "ecosystem.config.js"]

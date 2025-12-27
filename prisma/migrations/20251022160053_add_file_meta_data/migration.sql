@@ -19,7 +19,7 @@ ALTER TABLE `products` ADD COLUMN `coverImageOriginal` VARCHAR(191) NULL,
     MODIFY `description` TEXT NOT NULL;
 
 -- AlterTable
-ALTER TABLE `user` MODIFY `provider` VARCHAR(191) NULL;
+ALTER TABLE `User` MODIFY `provider` VARCHAR(191) NULL;
 
 -- CreateIndex
 CREATE UNIQUE INDEX `products_slug_key` ON `products`(`slug`);

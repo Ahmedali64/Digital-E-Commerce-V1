@@ -26,11 +26,11 @@ pipeline {
         }
         stage('Build-Running-Docker-Compose') {
             agent any
-            withCredentials([file(credentialsId: 'app-env-file', variable: 'ENV_FILE')]) {
-                sh 'cp $ENV_FILE .env'
-                sh 'docker-compose --env-file .env up --build -d'
-            }
             steps {
+                withCredentials([file(credentialsId: 'app-env-file', variable: 'ENV_FILE')]) {
+                    sh 'cp $ENV_FILE .env'
+                    sh 'docker-compose --env-file .env up --build -d'
+                }
                 sh 'docker-compose up --build -d'
             }
         }

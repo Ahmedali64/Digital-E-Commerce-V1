@@ -21,7 +21,7 @@ pipeline {
                 // From what i understood now we have all these files inside a docker container
                 // so we can just install all the libs and run the Test
                 sh 'npm ci'
-                sh 'npm run test || echo "Tests failed, continuing for now'
+                sh 'npm run test || echo "Tests failed, continuing for now"'
             }
         }
         stage('Build-Running-Docker-Compose') {

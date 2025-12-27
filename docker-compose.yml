@@ -62,16 +62,19 @@ services:
 
   # nginx proxy server
   nginx:
-    image: nginx:alpine
+    build:
+      context: .
+      dockerfile: nginx.Dockerfile
+    # image: nginx:alpine
     container_name: digital-ecommerce-nginx
     user: root  # we have to run this always as a root cause nginx need that so she can bind the ports 
     ports:
       - "8080:80"
     # mount config file why so when we change congif file we do not rebuild the whole image again + save logs
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/conf.d:/etc/nginx/conf.d:ro
-      - nginx_logs:/var/log/nginx/myapp/
+    # volumes:
+    #   - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    #   - ./nginx/conf.d:/etc/nginx/conf.d:ro
+    #   - nginx_logs:/var/log/nginx/myapp/
     restart: unless-stopped
     depends_on:
       - app

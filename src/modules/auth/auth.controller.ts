@@ -44,6 +44,7 @@ import { GithubAuthGuard } from 'src/common/guards/github-auth.guard';
 import { getErrorMessage } from 'src/common/utils/error.util';
 import { GoogleAuthGuard } from 'src/common/guards/google-auth.guard';
 import type { Response } from 'express';
+import { EmailVerificationService } from './email-verification.service';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -53,6 +54,7 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly configService: ConfigService,
+    private readonly emailVerificationService: EmailVerificationService,
   ) {}
 
   @Post('register')
@@ -116,7 +118,7 @@ export class AuthController {
     if (!dto.token) {
       throw new BadRequestException('Verification token is required');
     }
-    return this.authService.verifyEmail(dto.token);
+    return this.emailVerificationService.verifyEmail(dto.token);
   }
 
   @Post('resend-verification')
@@ -159,7 +161,7 @@ export class AuthController {
     if (!dto.email) {
       throw new BadRequestException('Email is required');
     }
-    return this.authService.resendVerificationEmail(dto.email);
+    return this.emailVerificationService.resendVerificationEmail(dto.email);
   }
 
   @Post('login')

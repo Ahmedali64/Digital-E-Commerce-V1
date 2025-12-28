@@ -45,6 +45,7 @@ import { getErrorMessage } from 'src/common/utils/error.util';
 import { GoogleAuthGuard } from 'src/common/guards/google-auth.guard';
 import type { Response } from 'express';
 import { EmailVerificationService } from './email-verification.service';
+import { PasswordResetService } from './password-reset.service';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -55,6 +56,7 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly configService: ConfigService,
     private readonly emailVerificationService: EmailVerificationService,
+    private readonly passwordResetService: PasswordResetService,
   ) {}
 
   @Post('register')
@@ -239,7 +241,7 @@ export class AuthController {
     type: ErrorResponseDto,
   })
   async requestPasswordReset(@Body() dto: ResendVerificationDto) {
-    return this.authService.requestPasswordReset(dto.email);
+    return this.passwordResetService.requestPasswordReset(dto.email);
   }
 
   @Post('reset-password')
@@ -262,7 +264,7 @@ export class AuthController {
     type: ErrorResponseDto,
   })
   async resetPassword(@Body() dto: ChangePasswordDto) {
-    return this.authService.resetPassword(dto.token, dto.newPassword);
+    return this.passwordResetService.resetPassword(dto.token, dto.newPassword);
   }
 
   @Post('logout')

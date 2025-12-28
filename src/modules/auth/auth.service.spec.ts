@@ -13,6 +13,9 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { Role } from '@prisma/client';
+import { EmailVerificationService } from './email-verification.service';
+import { PasswordResetService } from './password-reset.service';
+import { TokenService } from './token.service';
 
 // Mock bcrypt
 jest.mock('bcrypt');
@@ -22,11 +25,17 @@ describe('AuthService', () => {
   let prismaService: PrismaService;
   let jwtService: JwtService;
   let mailService: MailService;
+  let emailVerificationService: EmailVerificationService;
+  let passwordResetService: PasswordResetService;
 
   beforeEach(async () => {
     const module = await Test.createTestingModule({
       providers: [
         AuthService,
+        MailService,
+        EmailVerificationService,
+        PasswordResetService,
+        TokenService,
         {
           provide: PrismaService,
           useValue: {
@@ -80,7 +89,11 @@ describe('AuthService', () => {
     prismaService = module.get<PrismaService>(PrismaService);
     jwtService = module.get<JwtService>(JwtService);
     mailService = module.get<MailService>(MailService);
-
+    emailVerificationService = module.get<EmailVerificationService>(
+      EmailVerificationService,
+    );
+    passwordResetService =
+      module.get<PasswordResetService>(PasswordResetService);
     // Clear all mocks before each test
     jest.clearAllMocks();
   });
@@ -237,7 +250,7 @@ describe('AuthService', () => {
       });
 
       // Act
-      const result = await service.verifyEmail(token);
+      const result = await emailVerificationService.verifyEmail(token);
 
       // Assert
       expect(result.message).toContain('Email verified successfully');
@@ -258,12 +271,12 @@ describe('AuthService', () => {
       (prismaService.user.findUnique as jest.Mock).mockResolvedValue(null);
 
       // Act & Assert
-      await expect(service.verifyEmail('invalid-token')).rejects.toThrow(
-        BadRequestException,
-      );
-      await expect(service.verifyEmail('invalid-token')).rejects.toThrow(
-        'Invalid or expired verification token',
-      );
+      await expect(
+        emailVerificationService.verifyEmail('invalid-token'),
+      ).rejects.toThrow(BadRequestException);
+      await expect(
+        emailVerificationService.verifyEmail('invalid-token'),
+      ).rejects.toThrow('Invalid or expired verification token');
     });
 
     it('should throw BadRequestException if email already verified', async () => {
@@ -275,12 +288,12 @@ describe('AuthService', () => {
       });
 
       // Act & Assert
-      await expect(service.verifyEmail('some-token')).rejects.toThrow(
-        BadRequestException,
-      );
-      await expect(service.verifyEmail('some-token')).rejects.toThrow(
-        'Email already verified',
-      );
+      await expect(
+        emailVerificationService.verifyEmail('some-token'),
+      ).rejects.toThrow(BadRequestException);
+      await expect(
+        emailVerificationService.verifyEmail('some-token'),
+      ).rejects.toThrow('Email already verified');
     });
 
     it('should throw BadRequestException if token is expired', async () => {
@@ -296,12 +309,12 @@ describe('AuthService', () => {
       });
 
       // Act & Assert
-      await expect(service.verifyEmail('expired-token')).rejects.toThrow(
-        BadRequestException,
-      );
-      await expect(service.verifyEmail('expired-token')).rejects.toThrow(
-        'Verification token has expired',
-      );
+      await expect(
+        emailVerificationService.verifyEmail('expired-token'),
+      ).rejects.toThrow(BadRequestException);
+      await expect(
+        emailVerificationService.verifyEmail('expired-token'),
+      ).rejects.toThrow('Verification token has expired');
     });
   });
 
@@ -324,7 +337,8 @@ describe('AuthService', () => {
       );
 
       // Act
-      const result = await service.resendVerificationEmail(email);
+      const result =
+        await emailVerificationService.resendVerificationEmail(email);
 
       // Assert
       expect(result.message).toContain('Verification email sent');
@@ -338,10 +352,14 @@ describe('AuthService', () => {
 
       // Act & Assert
       await expect(
-        service.resendVerificationEmail('nonexistent@example.com'),
+        emailVerificationService.resendVerificationEmail(
+          'nonexistent@example.com',
+        ),
       ).rejects.toThrow(BadRequestException);
       await expect(
-        service.resendVerificationEmail('nonexistent@example.com'),
+        emailVerificationService.resendVerificationEmail(
+          'nonexistent@example.com',
+        ),
       ).rejects.toThrow('User not found');
     });
 
@@ -355,10 +373,10 @@ describe('AuthService', () => {
 
       // Act & Assert
       await expect(
-        service.resendVerificationEmail('test@example.com'),
+        emailVerificationService.resendVerificationEmail('test@example.com'),
       ).rejects.toThrow(BadRequestException);
       await expect(
-        service.resendVerificationEmail('test@example.com'),
+        emailVerificationService.resendVerificationEmail('test@example.com'),
       ).rejects.toThrow('Email already verified');
     });
   });
@@ -381,7 +399,7 @@ describe('AuthService', () => {
       );
 
       // Act
-      const result = await service.requestPasswordReset(email);
+      const result = await passwordResetService.requestPasswordReset(email);
 
       // Assert
       expect(result.message).toContain('password reset link has been sent');
@@ -394,7 +412,7 @@ describe('AuthService', () => {
       (prismaService.user.findUnique as jest.Mock).mockResolvedValue(null);
 
       // Act
-      const result = await service.requestPasswordReset(
+      const result = await passwordResetService.requestPasswordReset(
         'nonexistent@example.com',
       );
 
@@ -418,7 +436,8 @@ describe('AuthService', () => {
       );
 
       // Act
-      const result = await service.requestPasswordReset('test@example.com');
+      const result =
+        await passwordResetService.requestPasswordReset('test@example.com');
 
       // Assert - Should still return success message
       expect(result.message).toContain('password reset link has been sent');
@@ -448,7 +467,10 @@ describe('AuthService', () => {
       });
 
       // Act
-      const result = await service.resetPassword(token, newPassword);
+      const result = await passwordResetService.resetPassword(
+        token,
+        newPassword,
+      );
 
       // Assert
       expect(result.message).toContain('Password reset successfully');
@@ -471,10 +493,10 @@ describe('AuthService', () => {
 
       // Act & Assert
       await expect(
-        service.resetPassword('invalid-token', 'NewPassword123!'),
+        passwordResetService.resetPassword('invalid-token', 'NewPassword123!'),
       ).rejects.toThrow(BadRequestException);
       await expect(
-        service.resetPassword('invalid-token', 'NewPassword123!'),
+        passwordResetService.resetPassword('invalid-token', 'NewPassword123!'),
       ).rejects.toThrow('Invalid or expired reset token');
     });
 
@@ -490,10 +512,10 @@ describe('AuthService', () => {
 
       // Act & Assert
       await expect(
-        service.resetPassword('expired-token', 'NewPassword123!'),
+        passwordResetService.resetPassword('expired-token', 'NewPassword123!'),
       ).rejects.toThrow(BadRequestException);
       await expect(
-        service.resetPassword('expired-token', 'NewPassword123!'),
+        passwordResetService.resetPassword('expired-token', 'NewPassword123!'),
       ).rejects.toThrow('Reset token has expired');
     });
   });

@@ -72,6 +72,10 @@ services:
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
       - nginx_logs:/var/log/nginx/myapp/
     restart: unless-stopped
+    networks:
+      - app-network
+    depends_on:
+      - app
   
   # NestJS Application
   app:
@@ -84,8 +88,10 @@ services:
         DATABASE_URL: mysql://${DB_USER}:${DB_PASSWORD}@mysql:3306/${DB_NAME}
     container_name: digital-ecommerce-app
     restart: unless-stopped
-    ports:
-      - '${PORT:-3000}:3000'
+    expose:
+      - '${PORT}'
+    # ports:
+    #   - '${PORT:-3000}:3000'
     # env_file:
     #   - .env
     environment:

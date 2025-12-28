@@ -3,10 +3,10 @@ import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 
-import { PayloadType } from '../auth.service';
 import { PrismaService } from 'src/modules/prisma/prisma.service';
+import { TokenPayload } from '../token.service';
 
-export type JwtPayload = PayloadType & {
+export type JwtPayload = TokenPayload & {
   iat: number;
   exp: number;
 };

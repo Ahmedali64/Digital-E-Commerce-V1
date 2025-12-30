@@ -350,9 +350,16 @@ export class AuthController {
 
     try {
       const result = await this.authService.handleOAuthLogin(req.user);
-      const frontendUrl = this.configService.get<string>('FRONTEND_URL');
-      const redirectUrl = `${frontendUrl}/auth/callback?token=${result.accessToken}`;
-      return res.redirect(redirectUrl);
+      // const frontendUrl = this.configService.get<string>('FRONTEND_URL');
+      // const redirectUrl = `${frontendUrl}/auth/callback?token=${result.accessToken}`;
+      // When i have frontend i will use this but for dev now i will just return json
+      return res.json({
+        message: 'Login successful',
+        accessToken: result.accessToken,
+        refreshToken: result.refreshToken,
+        user: result.user,
+      });
+      // return res.redirect(redirectUrl);
     } catch (error) {
       const frontendUrl = this.configService.get<string>('FRONTEND_URL');
       const message = getErrorMessage(error);

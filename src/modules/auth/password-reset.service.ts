@@ -101,9 +101,6 @@ export class PasswordResetService {
     this.logger.log(`Password reset successful for user: ${user.id}`);
     // Delete all refresh tokens to log him out from all devices so he log again with the new password
     await this.tokenService.invalidateAllUserTokens(user.id);
-
-    this.logger.log(`All refresh tokens invalidated for user: ${user.id}`);
-
     return {
       message:
         'Password reset successfully! You can now login with your new password.',

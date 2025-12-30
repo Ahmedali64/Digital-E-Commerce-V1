@@ -1,4 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 import * as handlebars from 'handlebars';
@@ -6,6 +10,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { createMailTransporter } from 'src/config/mail.config';
 import { Order, OrderItem } from '@prisma/client';
+import { formatError } from 'src/common/utils/error.util';
 
 type OrderWithRelations = Order & {
   items: OrderItem[];
@@ -25,19 +30,26 @@ export class MailService {
   constructor(private configService: ConfigService) {
     this.transporter = createMailTransporter(this.configService);
   }
-
+  private logger = new Logger(MailService.name);
   async sendVerificationEmail(
     email: string,
     token: string,
     firstName: string,
   ): Promise<void> {
+    this.logger.log(
+      `Sending email verification process has been started for ${email}`,
+    );
     // This is what we will send to the user in the email
     const verificationUrl = `${this.configService.get('FRONTEND_URL')}/auth/verify-email?token=${token}`;
 
     // Load and compile the template
+    // const templatePath = path.join(
+    //   process.cwd(),
+    //   'src/modules/mail/templates/email-verification.hbs',
+    // );
     const templatePath = path.join(
       process.cwd(),
-      'src/modules/mail/templates/email-verification.hbs',
+      'dist/src/modules/mail/templates/email-verification.hbs',
     );
     try {
       const templateSource = fs.readFileSync(templatePath, 'utf-8');
@@ -48,6 +60,8 @@ export class MailService {
         verificationUrl: verificationUrl,
       });
 
+      Logger.log('Email template generated successfully');
+
       // Send the email
       await this.transporter.sendMail({
         from: `"Degital-E-Commerce-Member" <${this.configService.get('MAIL_FROM')}>`,
@@ -55,11 +69,15 @@ export class MailService {
         subject: 'Verify Your Email Address',
         html: html,
       });
+      this.logger.log(`verification email has been sent successfully`);
     } catch (error) {
-      console.log(
-        '[mail.service] - An error occured while sending verification email',
+      const { message, stack } = formatError(error);
+      this.logger.error(
+        `An error occured while sending verification email Message: ${message}, Stack: ${stack} `,
       );
-      throw error;
+      throw new InternalServerErrorException(
+        'An error occured while sending verification email',
+      );
     }
   }
 
@@ -68,11 +86,14 @@ export class MailService {
     token: string,
     firstName: string,
   ): Promise<void> {
+    this.logger.log(
+      `Sending password reset email process has been started for ${email}`,
+    );
     const resetUrl = `${this.configService.get('FRONTEND_URL')}/auth/reset-password?token=${token}`;
 
     const templatePath = path.join(
       process.cwd(),
-      'src/modules/mail/templates/password-reset.hbs',
+      'dist/src/modules/mail/templates/password-reset.hbs',
     );
     try {
       const templateSource = fs.readFileSync(templatePath, 'utf-8');
@@ -84,25 +105,34 @@ export class MailService {
         resetUrl: resetUrl,
       });
 
+      Logger.log('Email template generated successfully');
+
       await this.transporter.sendMail({
         from: `"Degital-E-Commerce-Member" <${this.configService.get('MAIL_FROM')}>`,
         to: email,
         subject: 'Reset Your Password',
         html: html,
       });
+      this.logger.log(`Password reset email has been sent successfully`);
     } catch (error) {
-      console.log(
-        '[mail.service] - An error occured while sending Password reset email',
+      const { message, stack } = formatError(error);
+      this.logger.error(
+        `An error occured while sending Password reset email Message: ${message}, Stack: ${stack} `,
       );
-      throw error;
+      throw new InternalServerErrorException(
+        'An error occured while sending Password reset email',
+      );
     }
   }
 
   async sendPaymentReceiptEmail(order: OrderWithRelations): Promise<void> {
+    this.logger.log(
+      `Sending payment receipt email process has been started for ${order.id}`,
+    );
     // temp file path
     const templatePath = path.join(
       process.cwd(),
-      'src/modules/mail/templates/payment-receipt.hbs',
+      'dist/src/modules/mail/templates/payment-receipt.hbs',
     );
 
     try {
@@ -136,19 +166,22 @@ export class MailService {
         downloadUrl: `${this.configService.get('FRONTEND_URL')}/orders/${order.id}`,
         myOrdersUrl: `${this.configService.get('FRONTEND_URL')}/orders`,
       });
-
+      Logger.log('Email template generated successfully');
       await this.transporter.sendMail({
         from: `"Digital E-Commerce" <${this.configService.get('MAIL_FROM')}>`,
         to: order.user.email,
         subject: `Payment Receipt - Order #${order.id.slice(0, 8)}`,
         html: html,
       });
+      this.logger.log(`payment receipt email has been sent successfully`);
     } catch (error) {
-      console.error(
-        '[MailService] Failed to send payment receipt email',
-        error,
+      const { message, stack } = formatError(error);
+      this.logger.error(
+        `Failed to send payment receipt email Message: ${message}, Stack: ${stack} `,
       );
-      throw error;
+      throw new InternalServerErrorException(
+        'Failed to send payment receipt email',
+      );
     }
   }
 }

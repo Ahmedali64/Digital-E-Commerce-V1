@@ -280,6 +280,8 @@ export class AuthService {
         user.email,
         user.role,
       );
+      this.logger.log(`Tokens generated successfully for user: ${user.id}`);
+      await this.tokenService.storeRefreshToken(user.id, tokens.refresh_token);
 
       return {
         message: 'Login successful',
